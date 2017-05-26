@@ -1,17 +1,11 @@
 # concordances-rw-dynamodb
-_Should be the same as the github repo name but it isn't always._
-
 [![Circle CI](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb/tree/master.png?style=shield)](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb/tree/master)[![Go Report Card](https://goreportcard.com/badge/github.com/Financial-Times/concordances-rw-dynamodb)](https://goreportcard.com/report/github.com/Financial-Times/concordances-rw-dynamodb) [![Coverage Status](https://coveralls.io/repos/github/Financial-Times/concordances-rw-dynamodb/badge.svg)](https://coveralls.io/github/Financial-Times/concordances-rw-dynamodb)
 
 ## Introduction
 
-_What is this service and what is it for? What other services does it depend on_
-
-Reads / Writes concorded concepts to DynamoDB
+This service reads and writes concorded concepts to DynamoDB
 
 ## Installation
-      
-_How can I install it_
 
 Download the source code, dependencies and test dependencies:
 
@@ -22,7 +16,6 @@ Download the source code, dependencies and test dependencies:
         go build .
 
 ## Running locally
-_How can I run it_
 
 1. Run the tests and install the binary:
 
@@ -40,8 +33,6 @@ Options:
         --app-name="Concordances RW DynamoDB"                   Application name ($APP_NAME)
         --port="8080"                                           Port to listen on ($APP_PORT)
         
-3. Test: See requests below
-
 
 ## Build and deployment
 _How can I build and deploy it (lots of this will be links out as the steps will be common)_
@@ -50,21 +41,58 @@ _How can I build and deploy it (lots of this will be links out as the steps will
 * CI provided by CircleCI: [concordances-rw-dynamodb](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb)
 
 ## Service endpoints
-_What are the endpoints offered by the service_
+See the api/api.yml for the swagger definitions of these endpoints
 
-e.g.
 ### GET
 
-Using curl:
+Using curl:  
+  _request:_
+  
+     curl -X GET "https://user:pass@prod-up.ft.com/__concordances-rw-dynamodb/concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0" -H  "accept: application/json; charset=UTF-8"
+   
+ _response:_  
+ 
+    HTTP/1.1 200 OK
+    Content-Type: application/json
+    X-Request-Id: transaction ID, e.g. tid_etmIWTJVeA
 
-    curl http://localhost:8080/_<INSERT SEPCIFIC URL HERE>_| json_pp`
+    {
+      "uuid": "4f50b156-6c50-4693-b835-02f70d3f3bc0",
+      "concordedIds": ["7c4b3931-361f-4ea4-b694-75d1630d7746", "1e5c86f8-3f38-4b6b-97ce-f75489ac3113", "0e5033fe-d079-485c-a6a1-8158ad4f37ce"]
+    }
+ 
+  _request:_
+  
+    curl -X GET "https://user:pass@prod-up.ft.com/__concordances-rw-dynamodb/concordances/__count" -H  "accept: text/plain"
+    HTTP/1.1 200 OK
+    Content-Type: text/plain
+    100
 
-_Explain what the response should represent_
+### PUT
+Using curl:  
+  _request:_
+```
+curl -X PUT "https://user:pass@prod-up.ft.com/__concordances-rw-dynamodb/concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0" -H  "accept: application/json" -H  
+"content-type: application/json; charset=utf-8" -d 
+"{  
+    "uuid": "4f50b156-6c50-4693-b835-02f70d3f3bc0",  
+    "concordedIds": [
+       "7c4b3931-361f-4ea4-b694-75d1630d7746 ",
+       "1e5c86f8-3f38-4b6b-97ce-f75489ac3113",
+       "0e5033fe-d079-485c-a6a1-8158ad4f37ce"
+         ]
+ }"
+```
+### DELETE
+Using curl:  
+  _request:_
+  
+    curl -X DELETE "https://api.ft.com/__concordances-rw-dynamodb/concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0" -H  "accept: application/json"
 
-Based on the following [google doc](_<INSERT API DOCUMETATION HERE>_)
+Based on the following [google doc](https://docs.google.com/document/d/1SFm7NwULX0nGqzfoX5JQGWZcd918YBwEGuO10kULovQ/edit?ts=591d86df#)
 
 ## Utility endpoints
-_Endpoints that are there for support or testing, e.g read endpoints on the writers_
+N/A  
 
 ## Healthchecks
 Admin endpoints are:
@@ -75,16 +103,14 @@ Admin endpoints are:
 
 `/__build-info`
 
-_These standard endpoints do not need to be specifically documented._
+There are several checks performed:  
+ 
+* Checks that DynamoDB table is accessible, using parameters supplied on service startup.  
 
-_This section *should* however explain what checks are done to determine health and gtg status._
-
-There are several checks performed:
-
-_e.g._
-* Checks that a connection can be made to Neo4j, using the neo4j url supplied as a parameter in service startup.
+See the api/api.yml for the swagger definitions of these endpoints  
 
 ## Other information
+TODO  
 _Anything else you want to add._
 
 _e.g. (NB: this example may be something we want to extract as it's probably common to a lot of services)_
