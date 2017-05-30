@@ -17,8 +17,8 @@ basePath: /__concordances-rw-dynamodb
 paths:
   /concordances/{uuid}:
     get:
-      summary: Retrieves concordance record for a given {uuid} of a concept.
-      description: Given uuid of a concept responds with concordance record for that concept in json format.
+      summary: Retrieves concordances record for a given UUID of a concept.
+      description: Given UUID of a concept as path parameter responds with concordances record for that concept in json format.
       tags:
         - Internal API
       produces:
@@ -31,16 +31,16 @@ paths:
           description: UUID of a concept to find its concordances
       responses:
         200:
-          description: Success body if the concordance records are retrieved.
+          description: Success body if the concordances records are retrieved.
           examples:
             {
               "uuid": "4f50b156-6c50-4693-b835-02f70d3f3bc0",
               "concordedIds": ["7c4b3931-361f-4ea4-b694-75d1630d7746", "1e5c86f8-3f38-4b6b-97ce-f75489ac3113", "0e5033fe-d079-485c-a6a1-8158ad4f37ce"]
             }
         400:
-          description: Bad request if {uuid} is not valid.
+          description: Bad request if the uuid path parameter is badly formed or missing.
         404:
-          description: Not Found if there is no concordance record for the {uuid}.
+          description: Not Found if there is no concordances record for the uuid path parameter is found.
         405:
           description: Method Not Allowed if anything other than a GET, PUT or DELETE is received.
         500:
@@ -49,8 +49,8 @@ paths:
           description: Service Unavailable if it cannot connect to the cache storage.
 
     delete:
-      summary: Deletes the concordance record for a {uuid}
-      description: Deletes the concordance record for a {uuid}
+      summary: Deletes the concordances record for a given UUID of a concept.
+      description: Given UUID of a concept as path parameter deletes the concordances record for that concept.
       tags:
         - Internal API
       parameters:
@@ -63,51 +63,52 @@ paths:
         204:
          description: No Content if the record was successfully deleted.
         400:
-          description: Bad Request if the payload is badly formatted or does not contain the required fields.
+          description: Bad Request if the uuid path parameter is badly formed or missing.
         404:
-          description: Bad request if {uuid} is not valid.
+          description: Not Found if no concordances record for the uuid path parameter is found.
         405:
           description: Method Not Allowed if anything other than a GET, PUT or DELETE is received.
         500:
           description: Internal Server Error if there was an issue processing the delete.
-        501:
+        503:
           description: Service Unavailable if it cannot connect to the cache storage.
+
     put:
-      summary: Stores the concordance record for the provided concept {uuid}.
-      description: Expects body in json format. Expects {uuid} in the path and in the body to match. The UUID in the URL should be the primary object, if the distinction exists (eg. where the two objects are of the same type).
+      summary: Stores the concordances record for a given UUID of a concept.
+      description: Expects body in json format. Expects uuid path parameter and uuid json property in the body to match. The UUID in the URL should be the primary object, if the distinction exists (eg. where the two objects are of the same type).
       tags:
         - Internal API
       consumes:
         - application/json; charset=utf-8
       parameters:
         - in: body
-          name: concordance_record
-          description: uuid of a concept to delete its concordances
+          name: concordances_record
+          description: Concordances record in json format to be stored.
           schema:
             $ref: "#/definitions/concordance"
         - in: path
           name: uuid
           type: string
           required: true
-          description: uuid of a concept whose concordance record is to be written to the store
+          description: UUID of a concept whose concordances record is to be stored.
       responses:
         200:
           description: Updated if the record was successfully stored.
         201:
           description: Created if the record was successfully stored.
         400:
-          description: Bad Request if the payload is badly formatted or does not contain the required fields.
+          description: Bad Request if the payload json is badly formatted or does not contain the required fields or if the uuid path parameter is badly formed or missing.
         405:
           description: Method Not Allowed if anything other than a GET, PUT or DELETE is received.
         500:
           description: Internal Server Error if there was an issue processing the records.
-        501:
+        503:
           description: Service Unavailable if it cannot connect to the cache storage.
 
   /concordances/__count:
     get:
-      summary: Concordance records count.
-      description: Gets a count of the number of concordance records.
+      summary: Concordances records count.
+      description: Gets the total count of stored concordances records.
       produces:
         - text/plain
       tags:

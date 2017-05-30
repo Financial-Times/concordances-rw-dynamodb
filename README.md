@@ -3,7 +3,8 @@
 
 ## Introduction
 
-This service reads and writes concorded concepts to DynamoDB
+The concordance-rw-dynamodb service is responsible for taking a normalised concordance object and storing it into DynamoDB.
+A concordance is linking one primary concept identifier to another concept identifier.
 
 ## Installation
 
@@ -40,17 +41,20 @@ _How can I build and deploy it (lots of this will be links out as the steps will
 * Built by Docker Hub on merge to master: [coco/concordances-rw-dynamodb](https://hub.docker.com/r/coco/concordances-rw-dynamodb/)
 * CI provided by CircleCI: [concordances-rw-dynamodb](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb)
 
-## Service endpoints
-See the api/api.yml for the swagger definitions of these endpoints
+## API 
+* Based on the following [google doc](https://docs.google.com/document/d/1SFm7NwULX0nGqzfoX5JQGWZcd918YBwEGuO10kULovQ/edit?ts=591d86df#)   
+* See the /api/api.yml for the swagger definitions of the endpoints below.  
+
+## Utility endpoints
 
 ### GET
-
-Using curl:  
-  _request:_
+_summary:_ `Retrieves concordances record for a given UUID of a concept.`  
+_description:_ `Given UUID of a concept as path parameter responds with concordances record for that concept in json format`  
+_request:_
   
-     curl -X GET "https://user:pass@prod-up.ft.com/__concordances-rw-dynamodb/concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0" -H  "accept: application/json; charset=UTF-8"
+     curl -X GET "https://user:pass@pub-prod-up.ft.com/__concordances-rw-dynamodb/concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0" -H  "accept: application/json; charset=UTF-8"
    
- _response:_  
+_response:_  
  
     HTTP/1.1 200 OK
     Content-Type: application/json
@@ -61,18 +65,23 @@ Using curl:
       "concordedIds": ["7c4b3931-361f-4ea4-b694-75d1630d7746", "1e5c86f8-3f38-4b6b-97ce-f75489ac3113", "0e5033fe-d079-485c-a6a1-8158ad4f37ce"]
     }
  
-  _request:_
+ ### GET
+_request:_
+_summary:_ `Concordances records count.`  
+_description:_ `Gets the total count of stored concordances records.`  
   
-    curl -X GET "https://user:pass@prod-up.ft.com/__concordances-rw-dynamodb/concordances/__count" -H  "accept: text/plain"
+    curl -X GET "https://user:pass@pub-prod-up.ft.com/__concordances-rw-dynamodb/concordances/__count" -H  "accept: text/plain"
     HTTP/1.1 200 OK
     Content-Type: text/plain
     100
 
 ### PUT
-Using curl:  
-  _request:_
+_summary:_ `Stores the concordances record for a given UUID of a concept.`  
+_description:_ `Expects body in json format. Expects uuid path parameter and uuid json property in the body to match. The UUID in the URL should be the primary object, if the distinction exists (eg. where the two objects are of the same type).`  
+      
+_request:_
 ```
-curl -X PUT "https://user:pass@prod-up.ft.com/__concordances-rw-dynamodb/concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0" -H  "accept: application/json" -H  
+curl -X PUT "https://user:pass@pub-prod-up.ft.com/__concordances-rw-dynamodb/concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0" -H  "accept: application/json" -H  
 "content-type: application/json; charset=utf-8" -d 
 "{  
     "uuid": "4f50b156-6c50-4693-b835-02f70d3f3bc0",  
@@ -84,18 +93,17 @@ curl -X PUT "https://user:pass@prod-up.ft.com/__concordances-rw-dynamodb/concord
  }"
 ```
 ### DELETE
-Using curl:  
-  _request:_
+_summary:_ `Deletes the concordances record for a given UUID of a concept.`    
+_description:_ `Given UUID of a concept as path parameter deletes the concordances record for that concept.`   
+
+_request:_
   
-    curl -X DELETE "https://api.ft.com/__concordances-rw-dynamodb/concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0" -H  "accept: application/json"
+    curl -X DELETE "https://user:pass@pub-prod-up.ft.com/__concordances-rw-dynamodb/concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0" -H  "accept: application/json"
 
-Based on the following [google doc](https://docs.google.com/document/d/1SFm7NwULX0nGqzfoX5JQGWZcd918YBwEGuO10kULovQ/edit?ts=591d86df#)
 
-## Utility endpoints
-N/A  
 
-## Healthchecks
-Admin endpoints are:
+
+## Admin endpoints
 
 `/__gtg`
 
@@ -108,12 +116,6 @@ There are several checks performed:
 * Checks that DynamoDB table is accessible, using parameters supplied on service startup.  
 
 See the api/api.yml for the swagger definitions of these endpoints  
-
-## Other information
-TODO  
-_Anything else you want to add._
-
-_e.g. (NB: this example may be something we want to extract as it's probably common to a lot of services)_
 
 ### Logging
 
