@@ -1,0 +1,211 @@
+swagger: "2.0"
+info:
+  description: "Concordances RW DynamoDB reads and writes concorded concepts to DynamoDB"
+  version: "1.0.0"
+  title: "concordances-rw-dynamodb"
+  contact:
+    name: Universal Publishing
+    email: Universal.Publishing.Platform@ft.com
+  license:
+    name: Apache-2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0
+host: api.ft.com
+schemes:
+  - https
+basePath: /__concordances-rw-dynamodb
+
+paths:
+  /concordances/{uuid}:
+    get:
+      summary: Retrieves concordances record for a given UUID of a concept.
+      description: Given UUID of a concept as path parameter responds with concordances record for that concept in json format.
+      tags:
+        - Internal API
+      produces:
+        - application/json; charset=UTF-8
+      parameters:
+        - in: path
+          name: uuid
+          type: string
+          required: true
+          description: UUID of a concept to find its concordances
+      responses:
+        200:
+          description: Success body if the concordances records are retrieved.
+          examples:
+            {
+              "uuid": "4f50b156-6c50-4693-b835-02f70d3f3bc0",
+              "concordedIds": ["7c4b3931-361f-4ea4-b694-75d1630d7746", "1e5c86f8-3f38-4b6b-97ce-f75489ac3113", "0e5033fe-d079-485c-a6a1-8158ad4f37ce"]
+            }
+        400:
+          description: Bad request if the uuid path parameter is badly formed or missing.
+        404:
+          description: Not Found if there is no concordances record for the uuid path parameter is found.
+        405:
+          description: Method Not Allowed if anything other than a GET, PUT or DELETE is received.
+        500:
+          description: Internal Server Error if there was an issue processing the records.
+        503:
+          description: Service Unavailable if it cannot connect to the cache storage.
+
+    delete:
+      summary: Deletes the concordances record for a given UUID of a concept.
+      description: Given UUID of a concept as path parameter deletes the concordances record for that concept.
+      tags:
+        - Internal API
+      parameters:
+        - in: path
+          name: uuid
+          type: string
+          required: true
+          description: UUID of a concept to delete its concordances.
+      responses:
+        204:
+         description: No Content if the record was successfully deleted.
+        400:
+          description: Bad Request if the uuid path parameter is badly formed or missing.
+        404:
+          description: Not Found if no concordances record for the uuid path parameter is found.
+        405:
+          description: Method Not Allowed if anything other than a GET, PUT or DELETE is received.
+        500:
+          description: Internal Server Error if there was an issue processing the delete.
+        503:
+          description: Service Unavailable if it cannot connect to the cache storage.
+
+    put:
+      summary: Stores the concordances record for a given UUID of a concept.
+      description: Expects body in json format. Expects uuid path parameter and uuid json property in the body to match. The UUID in the URL should be the primary object, if the distinction exists (eg. where the two objects are of the same type).
+      tags:
+        - Internal API
+      consumes:
+        - application/json; charset=utf-8
+      parameters:
+        - in: body
+          name: concordances_record
+          description: Concordances record in json format to be stored.
+          schema:
+            $ref: "#/definitions/concordance"
+        - in: path
+          name: uuid
+          type: string
+          required: true
+          description: UUID of a concept whose concordances record is to be stored.
+      responses:
+        200:
+          description: Updated if the record was successfully stored.
+        201:
+          description: Created if the record was successfully stored.
+        400:
+          description: Bad Request if the payload json is badly formatted or does not contain the required fields or if the uuid path parameter is badly formed or missing.
+        405:
+          description: Method Not Allowed if anything other than a GET, PUT or DELETE is received.
+        500:
+          description: Internal Server Error if there was an issue processing the records.
+        503:
+          description: Service Unavailable if it cannot connect to the cache storage.
+
+  /concordances/__count:
+    get:
+      summary: Concordances records count.
+      description: Gets the total count of stored concordances records.
+      produces:
+        - text/plain
+      tags:
+        - Internal API
+      responses:
+        200:
+          description: Responds with an integer as plain/text format.
+        500:
+          description: Internal error retrieving the count of concordances from the cache.
+        503:
+          description: Service Unavailable if it cannot connect to the cache storage.
+
+  /__ping:
+    get:
+      summary: Ping
+      description: Returns "pong" if the server is running.
+      produces:
+        - text/plain; charset=utf-8
+      tags:
+        - Health
+      responses:
+        200:
+          description: We return pong in plaintext only.
+          examples:
+            text/plain; charset=utf-8: pong
+
+  /__health:
+    get:
+      summary: Healthchecks
+      description: Runs application healthchecks and returns FT Healthcheck style json.
+      produces:
+        - application/json
+      tags:
+        - Health
+      responses:
+        200:
+          description: Should always return 200 along with the output of the healthchecks - regardless of whether the healthchecks failed or not. Please inspect the overall `ok` property to see whether or not the application is healthy.
+          examples:
+            application/json:
+              checks:
+                - businessImpact: "No Business Impact."
+                  checkOutput: "OK"
+                  lastUpdated: "2017-01-16T10:26:47.222805121Z"
+                  name: "concordances-rw-dynamodb healthchecks"
+                  ok: true
+                  panicGuide: "https://dewey.ft.com/concordances-rw-dynamodb.html"
+                  severity: 1
+                  technicalSummary: "TODO"
+              description: TODO
+              name: concordances-rw-dynamodb
+              ok: true
+              schemaVersion: 1
+
+  /__build-info:
+    get:
+      summary: Build Information
+      description: Returns application build info, such as the git repository and revision, the golang version it was built with, and the app release version.
+      produces:
+       - application/json; charset=UTF-8
+      tags:
+        - Info
+      responses:
+        200:
+          description: Outputs build information as described in the summary.
+          examples:
+            application/json; charset=UTF-8:
+              version: "0.0.7"
+              repository: "https://github.com/Financial-Times/concordances-rw-dynamodb.git"
+              revision: "7cdbdb18b4a518eef3ebb1b545fc124612f9d7cd"
+              builder: "go version go1.6.3 linux/amd64"
+              dateTime: "20161123122615"
+
+  /__gtg:
+    get:
+      summary: Good To Go
+      description: Lightly healthchecks the application, and returns a 200 if it's Good-To-Go.
+      tags:
+        - Health
+      responses:
+        200:
+           description: The application is healthy enough to perform all its functions correctly - i.e. good to go.
+        503:
+           description: One or more of the applications healthchecks have failed, so please do not use the app. See the /__health endpoint for more detailed information.
+
+definitions:
+    concordance:
+      type: object
+      properties:
+        uuid:
+          type: string
+        concortedIds:
+           type: array
+           items:
+             type: string
+      required:
+        - uuid
+        - concortedIds
+      example:
+        uuid: concept-uuid
+        concordedIds: [concorded-ConceptA-uuid, concorded-conceptB-uuid ]
