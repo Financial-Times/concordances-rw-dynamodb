@@ -1,14 +1,15 @@
 package main
 
 import (
-	health "github.com/Financial-Times/go-fthealth/v1_1"
-	status "github.com/Financial-Times/service-status-go/httphandlers"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/jawher/mow.cli"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"github.com/gorilla/mux"
+	"github.com/Financial-Times/concordances-rw-dynamodb/service"
 )
 
 const appDescription = "Reads / Writes concorded concepts to DynamoDB"
@@ -42,34 +43,26 @@ func main() {
 
 	app.Action = func() {
 		log.Infof("System code: %s, App Name: %s, Port: %s", *appSystemCode, *appName, *port)
+		
+		//TODO: populate
+		conf := service.AppConfig{}
 
-		go func() {
-			serveAdminEndpoints(*appSystemCode, *appName, *port)
-		}()
+		router := mux.NewRouter()
+		handler := service.NewHandler(conf, router)
+		handler.RegisterHandlers()
+		handler.RegisterAdminHandlers()
 
-		// todo: insert app code here
-
-		waitForSignal()
+		log.Infof("Listening on %v", *port)
+		if err := http.ListenAndServe(":"+*port, nil); err != nil {
+			log.Fatalf("Unable to start server: %v", err)
+		}
+		//What is this for?
+		//waitForSignal()
 	}
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Errorf("App could not start, error=[%s]\n", err)
 		return
-	}
-}
-
-func serveAdminEndpoints(appSystemCode string, appName string, port string) {
-	healthService := newHealthService(&healthConfig{appSystemCode: appSystemCode, appName: appName, port: port})
-
-	serveMux := http.NewServeMux()
-
-	hc := health.HealthCheck{SystemCode: appSystemCode, Name: appName, Description: appDescription, Checks: healthService.checks}
-	serveMux.HandleFunc(healthPath, health.Handler(hc))
-	serveMux.HandleFunc(status.GTGPath, status.NewGoodToGoHandler(healthService.gtgCheck))
-	serveMux.HandleFunc(status.BuildInfoPath, status.BuildInfoHandler)
-
-	if err := http.ListenAndServe(":"+port, serveMux); err != nil {
-		log.Fatalf("Unable to start: %v", err)
 	}
 }
 
