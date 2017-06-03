@@ -1,15 +1,14 @@
 package main
 
 import (
-
+	"github.com/Financial-Times/concordances-rw-dynamodb/service"
 	log "github.com/Sirupsen/logrus"
+	"github.com/gorilla/mux"
 	"github.com/jawher/mow.cli"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"github.com/gorilla/mux"
-	"github.com/Financial-Times/concordances-rw-dynamodb/service"
 )
 
 const appDescription = "Reads / Writes concorded concepts to DynamoDB"
@@ -43,14 +42,14 @@ func main() {
 
 	app.Action = func() {
 		log.Infof("System code: %s, App Name: %s, Port: %s", *appSystemCode, *appName, *port)
-		
+
 		//TODO: populate
 		conf := service.AppConfig{}
 
 		router := mux.NewRouter()
-		handler := service.NewHandler(conf, router)
-		handler.RegisterHandlers()
-		handler.RegisterAdminHandlers()
+		srv := service.NewConcordancesRwService(conf)
+		sh := service.RegisterHandlers(router)
+		sh.Initialise(srv, conf)
 
 		log.Infof("Listening on %v", *port)
 		if err := http.ListenAndServe(":"+*port, nil); err != nil {
