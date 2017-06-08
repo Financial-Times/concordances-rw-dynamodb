@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 const (
 	UUID = "4f50b156-6c50-4693-b835-02f70d3f3bc0"
@@ -33,6 +34,7 @@ func init() {
 }
 func setupTestCase(t *testing.T) func(t *testing.T) {
 	t.Log("Create table \n")
+	c = DynamoDbClientImpl{dynamoDbTable: DDB_TABLE, awsRegion: AWS_REGION, ddb: db}
 	createTableIfNotExists(t)
 
 	return func(t *testing.T) {
@@ -46,7 +48,9 @@ func setupDynamoDBLocal() *dynamodb.DynamoDB {
 	assert := assert.New(t)
 	sess, err := session.NewSession(&aws.Config{
 		Region:   aws.String(AWS_REGION),
-		Endpoint: aws.String(DDB_ENDPOINT)})
+		Endpoint: aws.String(DDB_ENDPOINT),
+		Credentials: credentials.NewEnvCredentials(),
+	})
 	assert.NoError(err, "Should be able to create a session talking to local DynamoDB. Make sure this is running")
 	ddb := dynamodb.New(sess)
 	return ddb
