@@ -1,4 +1,4 @@
-package service
+package concordances
 
 import (
 	"errors"
@@ -9,6 +9,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	db "github.com/Financial-Times/concordances-rw-dynamodb/dynamodb"
+	"bytes"
+	"io"
+	"io/ioutil"
 )
 
 const (
@@ -16,6 +20,52 @@ const (
 	Path            = "/concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0"
 	GoodBody        = "{\"conceptId\":\"4f50b156-6c50-4693-b835-02f70d3f3bc0\",\"concordedIds\":[\"1\",\"2\"]}"
 )
+
+type MockService struct {
+	model   db.Model
+	created bool
+	deleted bool
+	count   int64
+	err     error
+}
+
+func (mock *MockService) Read(uuid string) (db.Model, error) {
+	return mock.model, mock.err
+}
+
+func (mock *MockService) Write(m db.Model) (bool, error) {
+	return mock.created, mock.err
+}
+func (mock *MockService) Delete(uuid string) (bool, error) {
+	return mock.deleted, mock.err
+}
+func (mock *MockService) Count() (int64, error) {
+	return mock.count, mock.err
+}
+
+type mockHttpClient struct {
+	resp       string
+	statusCode int
+	err        error
+}
+
+func (c mockHttpClient) Do(req *http.Request) (resp *http.Response, err error) {
+	cb := ioutil.NopCloser(bytes.NewReader([]byte(c.resp)))
+	return &http.Response{Body: cb, StatusCode: c.statusCode}, c.err
+}
+
+func newRequest(method, url string, body string) *http.Request {
+	var payload io.Reader
+	if body != "" {
+		payload = bytes.NewReader([]byte(body))
+	}
+	req, err := http.NewRequest(method, url, payload)
+
+	if err != nil {
+		panic(err)
+	}
+	return req
+}
 
 type TestCase struct {
 	description          string
@@ -65,7 +115,7 @@ var COUNT_503 = TestCase{description: "Service Not Available",
 var GET_404 = TestCase{
 	description:          "GET Not Found",
 	request:              newRequest("GET", Path, ""),
-	service:              &MockService{model: Model{}},
+	service:              &MockService{model: db.Model{}},
 	expectedResponseCode: 404,
 	expectedContentType:  ContentTypeJson,
 }
@@ -101,7 +151,7 @@ var PUT_200 = TestCase{
 var GET_200 = TestCase{
 	description:          "GET 200 OK",
 	request:              newRequest("GET", Path, ""),
-	service:              &MockService{model: Model{UUID: TestConceptUuid, ConcordedIds: []string{"1", "2"}}},
+	service:              &MockService{model: db.Model{UUID: TestConceptUuid, ConcordedIds: []string{"1", "2"}}},
 	expectedResponseCode: 200,
 	expectedResponseBody: GoodBody,
 }

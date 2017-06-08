@@ -1,4 +1,4 @@
-package service
+package concordances
 
 import (
 	"encoding/json"
@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	db "github.com/Financial-Times/concordances-rw-dynamodb/dynamodb"
 )
 
 const (
@@ -145,7 +146,7 @@ func (h *ConcordancesRwHandler) HandlePut(rw http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	model := Model{}
+	model := db.Model{}
 	err = json.Unmarshal(body, &model)
 	//400
 	if err != nil {
@@ -160,7 +161,7 @@ func (h *ConcordancesRwHandler) HandlePut(rw http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	created, err := h.srv.Write(Model{})
+	created, err := h.srv.Write(db.Model{})
 
 	//503
 	if err != nil {
@@ -252,7 +253,7 @@ func (h *ConcordancesRwHandler) invalidPath(vars map[string]string) bool {
 	}
 	return false
 }
-func (h *ConcordancesRwHandler) invalidModel(uuid string, model Model) error {
+func (h *ConcordancesRwHandler) invalidModel(uuid string, model db.Model) error {
 	if model.UUID != uuid {
 		return errors.New(ErrorMsg_MismatchedConceptId)
 	}

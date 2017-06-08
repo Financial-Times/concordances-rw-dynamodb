@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/Financial-Times/concordances-rw-dynamodb/service"
+	"github.com/Financial-Times/concordances-rw-dynamodb/concordances"
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/jawher/mow.cli"
@@ -44,11 +44,11 @@ func main() {
 		log.Infof("System code: %s, App Name: %s, Port: %s", *appSystemCode, *appName, *port)
 
 		//TODO: populate
-		conf := service.AppConfig{}
+		conf := concordances.AppConfig{}
 
 		router := mux.NewRouter()
-		srv := service.NewConcordancesRwService(conf)
-		sh := service.RegisterHandlers(router)
+		srv := concordances.NewConcordancesRwService(conf)
+		sh := concordances.RegisterHandlers(router)
 		sh.Initialise(srv, conf)
 
 		log.Infof("Listening on %v", *port)

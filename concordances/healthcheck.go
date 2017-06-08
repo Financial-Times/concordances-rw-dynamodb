@@ -1,4 +1,4 @@
-package service
+package concordances
 
 import (
 	health "github.com/Financial-Times/go-fthealth/v1_1"
