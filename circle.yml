@@ -5,14 +5,13 @@ machine:
     PROJECT_PATH: "${PROJECT_PARENT_PATH}/${CIRCLE_PROJECT_REPONAME}"
     GOPATH: "${HOME}/.go_workspace:${PROJECT_GOPATH}"
     _JAVA_OPTIONS: "-Xms512m -Xmx1024m"
-
-java:
-  version: openjdk7
-  post:
-    - curl -k -L -o dynamodb-local.tgz http://dynamodb-local.s3-website-us-west-2.amazonaws.com/dynamodb_local_latest.tar.gz
-    - tar -xzf dynamodb-local.tgz
-    - java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb:
-      background: true
+      java:
+        version: openjdk7
+        post:
+          - curl -k -L -o dynamodb-local.tgz http://dynamodb-local.s3-website-us-west-2.amazonaws.com/dynamodb_local_latest.tar.gz
+          - tar -xzf dynamodb-local.tgz
+          - java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb:
+              background: true
 
 checkout:
   post:
