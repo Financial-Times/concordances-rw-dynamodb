@@ -195,7 +195,7 @@ func TestResponseCodesAndMessages(t *testing.T) {
 	}
 }
 
-func TestBadPath(t *testing.T) {
+func BadPath(t *testing.T) {
 	invalidPaths := []string{
 		"/concordances/invalidUUID",
 		"/not_concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0",
@@ -226,7 +226,7 @@ func TestBadPath(t *testing.T) {
 	}
 }
 
-func TestBadBody(t *testing.T) {
+func BadBody(t *testing.T) {
 	mismatchedPathUuid := "{\"conceptId\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", \"concordedIds\": [\"1\"]}"
 	conceptId_missing := "{\"concordedIds\": [\"1\"]}"
 	concordedIds_empty := "{\"conceptId\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", \"concordedIds\": []}"
@@ -276,7 +276,7 @@ func TestBadBody(t *testing.T) {
 	}
 }
 
-func TestAdminHandlers(t *testing.T) {
+func AdminHandlers(t *testing.T) {
 	adminHandlers := map[string]string {
 		status.PingPath:      "pong",
 		status.BuildInfoPath: "",
