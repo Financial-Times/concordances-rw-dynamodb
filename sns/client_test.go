@@ -38,8 +38,4 @@ func TestPublishInputHasData(t *testing.T) {
 	assert.NoError(t, err, "Received error")
 }
 
-func TestSendSnsMessage(t *testing.T) {
-	c := NewSnsClient(TOPIC, AWS_REGION);
-	err := c.SendMessage(UUID)
-	assert.NoError(t, err, "Failed to send meesage to SNS")
-}
+
