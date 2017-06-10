@@ -7,8 +7,6 @@ import (
 	"github.com/jawher/mow.cli"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 )
 
 const appDescription = "Reads / Writes concorded concepts to DynamoDB"
@@ -36,27 +34,42 @@ func main() {
 		Desc:   "Port to listen on",
 		EnvVar: "APP_PORT",
 	})
+	awsRegion := app.String(cli.StringOpt{
+		Name:   "awsRegion",
+		Value:  "eu-west-1",
+		Desc:   "AWS region of DynamoDB",
+		EnvVar: "AWS_REGION",
+	})
+	dynamoDbTableName := app.String(cli.StringOpt{
+		Name:   "dynamoDbTableName",
+		Value:  "8080",
+		Desc:   "Name of DynamoDB Table",
+		EnvVar: "DYNAMODB_TABLE_NAME",
+	})
 
 	log.SetLevel(log.InfoLevel)
 	log.Infof("[Startup] concordances-rw-dynamodb is starting ")
 
 	app.Action = func() {
-		log.Infof("System code: %s, App Name: %s, Port: %s", *appSystemCode, *appName, *port)
+		log.Infof("System code: %s, App Name: %s, Port: %s, DynamoDb Table: %s, AWS Region: %s", *appSystemCode, *appName, *port, *dynamoDbTableName, *awsRegion)
 
-		//TODO: populate
-		conf := concordances.AppConfig{}
+		conf := concordances.AppConfig{
+			AWSRegion: *awsRegion,
+			DynamoDbTableName: *dynamoDbTableName,
+			AppSystemCode: *appSystemCode,
+			AppName: *appName,
+			Port: *port,
+		}
 
 		router := mux.NewRouter()
 		srv := concordances.NewConcordancesRwService(conf)
-		sh := concordances.RegisterHandlers(router)
-		sh.Initialise(srv, conf)
+		concordances.NewConcordanceRwHandler(router, conf, srv)
 
 		log.Infof("Listening on %v", *port)
 		if err := http.ListenAndServe(":"+*port, nil); err != nil {
 			log.Fatalf("Unable to start server: %v", err)
 		}
-		//What is this for?
-		//waitForSignal()
+
 	}
 	err := app.Run(os.Args)
 	if err != nil {
@@ -65,8 +78,3 @@ func main() {
 	}
 }
 
-func waitForSignal() {
-	ch := make(chan os.Signal)
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	<-ch
-}

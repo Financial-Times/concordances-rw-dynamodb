@@ -50,7 +50,6 @@ func init() {
 	srv := &MockService{}
 	h = ConcordancesRwHandler{srv:srv}
 	h.registerApiHandlers(router)
-	h.registerApiHandlers(router)
 }
 
 func newRequest(method, url string, body string) *http.Request {
@@ -278,7 +277,7 @@ func TestAdminHandlers(t *testing.T) {
 		healthPath:           "",
 	}
 	router := mux.NewRouter()
-	RegisterHandlers(router)
+	NewConcordanceRwHandler(router, AppConfig{}, &MockService{})
 
 	for url, expectedBody := range adminHandlers {
 		t.Run(url,

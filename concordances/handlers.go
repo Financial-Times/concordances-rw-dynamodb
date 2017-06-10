@@ -41,17 +41,11 @@ type ConcordancesRwHandler struct {
 	port          string
 }
 
-func RegisterHandlers(router *mux.Router) *ConcordancesRwHandler {
-	h := ConcordancesRwHandler{}
+func NewConcordanceRwHandler(router *mux.Router, conf AppConfig, srv Service) ConcordancesRwHandler {
+	h := ConcordancesRwHandler{srv:srv, appName:conf.AppName, appSystemCode:conf.AppSystemCode, port: conf.Port}
 	h.registerAdminHandlers(router)
 	h.registerApiHandlers(router)
-	return &h
-}
-func (h *ConcordancesRwHandler) Initialise(srv Service, conf AppConfig) {
-	h.appName = conf.appName
-	h.appSystemCode = conf.appSystemCode
-	h.port = conf.port
-	h.srv = srv
+	return h
 }
 
 func (h *ConcordancesRwHandler) registerApiHandlers(router *mux.Router) {
@@ -214,6 +208,7 @@ func (h *ConcordancesRwHandler) HandleCount(rw http.ResponseWriter, r *http.Requ
 	b = strconv.AppendInt(b, count, 10)
 	rw.Write(b)
 }
+
 func (h *ConcordancesRwHandler) HandleBadRequest(rw http.ResponseWriter, r *http.Request) {
 	log.Infof(fmt.Sprintf("%s: %s", ErrorMsg_BadPath, r.URL.Path))
 	rw.Header().Set("Content-Type", ContentTypeJson)
@@ -253,6 +248,7 @@ func (h *ConcordancesRwHandler) invalidPath(vars map[string]string) bool {
 	}
 	return false
 }
+
 func (h *ConcordancesRwHandler) invalidModel(uuid string, model db.Model) error {
 	if model.UUID != uuid {
 		return errors.New(ErrorMsg_MismatchedConceptId)

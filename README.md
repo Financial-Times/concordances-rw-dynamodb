@@ -26,13 +26,15 @@ Download the source code, dependencies and test dependencies:
 
 2. Run the binary (using the `help` flag to see the available optional arguments):
 
-        $GOPATH/bin/concordances-rw-dynamodb [--help]
+        $GOPATH/bin/concordances-rw-dynamodb [--help]  
 
 Options:
 
         --app-system-code="concordances-rw-dynamodb"            System Code of the application ($APP_SYSTEM_CODE)
         --app-name="Concordances RW DynamoDB"                   Application name ($APP_NAME)
         --port="8080"                                           Port to listen on ($APP_PORT)
+        --awsRegion="eu-west-1"                                 AWS region of DynamoDB
+        --dynamoDbTableName="upp-concordance-store-[env]"       Name of DynamoDB Table
         
 ### Test locally
 Tests in dynamodb package rely on running instance of DynamoDB installed locally.  

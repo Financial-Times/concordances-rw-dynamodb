@@ -8,9 +8,9 @@ import (
 type AppConfig struct {
 	AWSRegion         string
 	DynamoDbTableName string
-	appSystemCode     string
-	appName           string
-	port              string
+	AppSystemCode     string
+	AppName           string
+	Port              string
 }
 
 
