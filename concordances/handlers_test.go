@@ -12,7 +12,6 @@ import (
 	db "github.com/Financial-Times/concordances-rw-dynamodb/dynamodb"
 	"bytes"
 	"io"
-	"io/ioutil"
 )
 
 const (
@@ -20,6 +19,9 @@ const (
 	Path            = "/concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0"
 	GoodBody        = "{\"conceptId\":\"4f50b156-6c50-4693-b835-02f70d3f3bc0\",\"concordedIds\":[\"1\",\"2\"]}"
 )
+
+var router *mux.Router
+var h ConcordancesRwHandler
 
 type MockService struct {
 	model   db.Model
@@ -43,15 +45,12 @@ func (mock *MockService) Count() (int64, error) {
 	return mock.count, mock.err
 }
 
-type mockHttpClient struct {
-	resp       string
-	statusCode int
-	err        error
-}
-
-func (c mockHttpClient) Do(req *http.Request) (resp *http.Response, err error) {
-	cb := ioutil.NopCloser(bytes.NewReader([]byte(c.resp)))
-	return &http.Response{Body: cb, StatusCode: c.statusCode}, c.err
+func init() {
+	router = mux.NewRouter()
+	srv := &MockService{}
+	h = ConcordancesRwHandler{srv:srv}
+	h.registerApiHandlers(router)
+	h.registerApiHandlers(router)
 }
 
 func newRequest(method, url string, body string) *http.Request {
@@ -87,6 +86,7 @@ var GET_503 = TestCase{
 }
 
 var PUT_503 = TestCase{
+
 	description:          "PUT Service Not Available",
 	request:              newRequest("PUT", Path, GoodBody),
 	service:              &MockService{err: errors.New("")},
@@ -165,14 +165,12 @@ var COUNT_200 = TestCase{
 }
 
 func TestResponseCodesAndMessages(t *testing.T) {
-	conf := AppConfig{}
 	testCases := []TestCase{GET_404, GET_503, GET_200, PUT_503, PUT_201, PUT_200, DELETE_503, DELETE_404, DELETE_204, COUNT_200, COUNT_503}
-	router := mux.NewRouter()
-	h := RegisterHandlers(router)
 	for _, c := range testCases {
+
 		t.Run(c.description,
 			func(t *testing.T) {
-				h.Initialise(c.service, conf)
+				h.srv = c.service
 				rec := httptest.NewRecorder()
 				router.ServeHTTP(rec, c.request)
 
@@ -195,7 +193,7 @@ func TestResponseCodesAndMessages(t *testing.T) {
 	}
 }
 
-func BadPath(t *testing.T) {
+func TestBadPath(t *testing.T) {
 	invalidPaths := []string{
 		"/concordances/invalidUUID",
 		"/not_concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0",
@@ -208,25 +206,21 @@ func BadPath(t *testing.T) {
 	methods := []string{"GET", "PUT", "DELETE"}
 	expectedErrorMessage := fmt.Sprintf(ErrorMsgJson, ErrorMsg_BadPath)
 
-	router := mux.NewRouter()
-	RegisterHandlers(router)
 	for _, p := range invalidPaths {
 		for _, m := range methods {
 			t.Run(fmt.Sprintf("%s: %s", m, p),
 				func(t *testing.T) {
-
 					rec := httptest.NewRecorder()
 					router.ServeHTTP(rec, newRequest(m, p, ""))
 					assert.Equal(t, 400, rec.Result().StatusCode, "Response code incorrect.")
 					assert.Equal(t, expectedErrorMessage, rec.Body.String(), "Response body incorrect.")
 					assert.Equal(t, ContentTypeJson, rec.HeaderMap["Content-Type"][0], "Incporrect Content-Type Header")
-
 				})
 		}
 	}
 }
 
-func BadBody(t *testing.T) {
+func TestBadBody(t *testing.T) {
 	mismatchedPathUuid := "{\"conceptId\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", \"concordedIds\": [\"1\"]}"
 	conceptId_missing := "{\"concordedIds\": [\"1\"]}"
 	concordedIds_empty := "{\"conceptId\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", \"concordedIds\": []}"
@@ -262,21 +256,21 @@ func BadBody(t *testing.T) {
 		{desc: "Payload is empty", request: newRequest("PUT", Path, ""),
 			expectedErrMsg: badJsonMsg},
 	}
-	router := mux.NewRouter()
-	RegisterHandlers(router)
-	for _, c := range invalidPayloads {
-		t.Run(c.desc, func(t *testing.T) {
-			rec := httptest.NewRecorder()
-			router.ServeHTTP(rec, c.request)
-			assert.Equal(t, 400, rec.Result().StatusCode, "Response code incorrect.")
-			assert.Equal(t, ContentTypeJson, rec.HeaderMap["Content-Type"][0], "Incporrect Content-Type Header")
-			assert.Equal(t, c.expectedErrMsg, rec.Body.String(), "Response body incorrect.")
 
-		})
+	for _, c := range invalidPayloads {
+		t.Run(c.desc,
+			func(t *testing.T) {
+				rec := httptest.NewRecorder()
+				router.ServeHTTP(rec, c.request)
+				assert.Equal(t, 400, rec.Result().StatusCode, "Response code incorrect.")
+				assert.Equal(t, ContentTypeJson, rec.HeaderMap["Content-Type"][0], "Incporrect Content-Type Header")
+				assert.Equal(t, c.expectedErrMsg, rec.Body.String(), "Response body incorrect.")
+			})
+
 	}
 }
 
-func AdminHandlers(t *testing.T) {
+func TestAdminHandlers(t *testing.T) {
 	adminHandlers := map[string]string {
 		status.PingPath:      "pong",
 		status.BuildInfoPath: "",
@@ -287,13 +281,18 @@ func AdminHandlers(t *testing.T) {
 	RegisterHandlers(router)
 
 	for url, expectedBody := range adminHandlers {
-		t.Run(url, func(t *testing.T) {
-			rec := httptest.NewRecorder()
-			router.ServeHTTP(rec, newRequest("GET", url, ""))
-			assert.Equal(t, 200, rec.Result().StatusCode)
-			if expectedBody != "" {
-				assert.Equal(t, expectedBody, rec.Body.String())
-			}
-		})
+		t.Run(url,
+			func(t *testing.T) {
+				rec := httptest.NewRecorder()
+				router.ServeHTTP(rec, newRequest("GET", url, ""))
+				assert.Equal(t, 200, rec.Result().StatusCode)
+				if expectedBody != "" {
+					assert.Equal(t, expectedBody, rec.Body.String())
+				}
+			})
 	}
 }
+
+
+
+

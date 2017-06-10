@@ -34,6 +34,16 @@ Options:
         --app-name="Concordances RW DynamoDB"                   Application name ($APP_NAME)
         --port="8080"                                           Port to listen on ($APP_PORT)
         
+### Test locally
+Tests in dynamodb package rely on running instance of DynamoDB installed locally.  
+Install Local DynamoDB following [instructions here](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html)  
+Start DynamoDB  
+`java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb -inMemory`
+```
+export AWS_SECRET_ACCESS_KEY=any_secret_key
+export AWS_ACCESS_KEY_ID=any_access_id
+```
+`go test ./dynamodb/`
 
 ## Build and deployment
 _How can I build and deploy it (lots of this will be links out as the steps will be common)_
@@ -123,3 +133,4 @@ See the api/api.yml for the swagger definitions of these endpoints
 * Logging requires an `env` app parameter, for all environments other than `local` logs are written to file.
 * When running locally, logs are written to console. If you want to log locally to file, you need to pass in an env parameter that is != `local`.
 * NOTE: `/__build-info` and `/__gtg` endpoints are not logged as they are called every second from varnish/vulcand and this information is not needed in logs/splunk.
+
