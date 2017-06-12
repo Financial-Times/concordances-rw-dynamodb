@@ -42,20 +42,28 @@ func main() {
 	})
 	dynamoDbTableName := app.String(cli.StringOpt{
 		Name:   "dynamoDbTableName",
-		Value:  "8080",
+		Value:  "upp-concordance-store-semantic",
 		Desc:   "Name of DynamoDB Table",
 		EnvVar: "DYNAMODB_TABLE_NAME",
+	})
+	snsTopicArn := app.String(cli.StringOpt{
+		Name:   "snsTopicArn",
+		Value:  "arn:aws:sns:eu-west-1:027104099916:upp-concordance-semantic-SNSTopic-SCOTT1234",
+		Desc:   "SNS Topic to notify about concordances events",
+		EnvVar: "SNS_TOPIC_NAME",
 	})
 
 	log.SetLevel(log.InfoLevel)
 	log.Infof("[Startup] concordances-rw-dynamodb is starting ")
 
 	app.Action = func() {
-		log.Infof("System code: %s, App Name: %s, Port: %s, DynamoDb Table: %s, AWS Region: %s", *appSystemCode, *appName, *port, *dynamoDbTableName, *awsRegion)
+		log.Infof("System code: %s, App Name: %s, Port: %s, DynamoDb Table: %s, AWS Region: %s, SNS Topic: %s",
+			*appSystemCode, *appName, *port, *dynamoDbTableName, *awsRegion, *snsTopicArn)
 
 		conf := concordances.AppConfig{
 			AWSRegion: *awsRegion,
 			DynamoDbTableName: *dynamoDbTableName,
+			SnsTopic: *snsTopicArn,
 			AppSystemCode: *appSystemCode,
 			AppName: *appName,
 			Port: *port,

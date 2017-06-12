@@ -155,7 +155,7 @@ func (h *ConcordancesRwHandler) HandlePut(rw http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	created, err := h.srv.Write(db.Model{})
+	created, err := h.srv.Write(model)
 
 	//503
 	if err != nil {
@@ -178,7 +178,7 @@ func (h *ConcordancesRwHandler) HandleDelete(rw http.ResponseWriter, r *http.Req
 		h.HandleBadRequest(rw, r)
 		return
 	}
-	uuid := vars["uuid"]
+	uuid := vars[UUID_Param]
 	deleted, err := h.srv.Delete(uuid)
 	//503
 	if err != nil {

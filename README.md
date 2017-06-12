@@ -35,7 +35,10 @@ Options:
         --port="8080"                                           Port to listen on ($APP_PORT)
         --awsRegion="eu-west-1"                                 AWS region of DynamoDB
         --dynamoDbTableName="upp-concordance-store-[env]"       Name of DynamoDB Table
-        
+        --snsTopicArn="arn:aws:sns:eu-west-1:..."               SNS Topic to notify about concordances events
+       
+Note that at this time DynamoDB and SNS topic are in the same AWS Region.  
+
 ### Test locally
 Tests in dynamodb package rely on running instance of DynamoDB installed locally.  
 Install Local DynamoDB following [instructions here](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html)  
