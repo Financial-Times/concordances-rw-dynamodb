@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"strconv"
 	db "github.com/Financial-Times/concordances-rw-dynamodb/dynamodb"
+
 )
 
 const (
@@ -36,13 +37,12 @@ var uuidRegex = regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{
 
 type ConcordancesRwHandler struct {
 	srv           Service
-	appSystemCode string
-	appName       string
-	port          string
+	conf 	      AppConfig
+
 }
 
 func NewConcordanceRwHandler(router *mux.Router, conf AppConfig, srv Service) ConcordancesRwHandler {
-	h := ConcordancesRwHandler{srv:srv, appName:conf.AppName, appSystemCode:conf.AppSystemCode, port: conf.Port}
+	h := ConcordancesRwHandler{srv:srv, conf:conf}
 	h.registerAdminHandlers(router)
 	h.registerApiHandlers(router)
 	return h
@@ -71,10 +71,12 @@ func (h *ConcordancesRwHandler) registerApiHandlers(router *mux.Router) {
 
 func (h *ConcordancesRwHandler) registerAdminHandlers(router *mux.Router) {
 	log.Info("Registering admin handlers")
-
-	//TODO: write specific healthchecks
-	healthService := newHealthService(&healthConfig{appSystemCode: h.appSystemCode, appName: h.appName, port: h.port})
-	hc := health.HealthCheck{SystemCode: h.appSystemCode, Name: h.appName, Description: "appDescription", Checks: healthService.checks}
+	healthService := newHealthService(&healthConfig{appSystemCode: h.conf.AppSystemCode, appName: h.conf.AppName, port: h.conf.Port,
+		DynamoDbTable: h.conf.DynamoDbTableName,
+		AwsRegion: h.conf.AWSRegion,
+		SnsTopic: h.conf.SnsTopic,
+	})
+	hc := health.HealthCheck{SystemCode: h.conf.AppSystemCode, Name: h.conf.AppName, Description: "Stores concordances in cache and notifies downstream services", Checks: healthService.checks}
 	router.HandleFunc(healthPath, health.Handler(hc))
 	router.HandleFunc(status.PingPath, status.PingHandler)
 	router.HandleFunc(status.GTGPath, status.NewGoodToGoHandler(healthService.gtgCheck))
