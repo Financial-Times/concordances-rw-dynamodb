@@ -1,17 +1,17 @@
 package concordances
 
 import (
-	"testing"
-	"github.com/stretchr/testify/assert"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func getConfig(srv Service) *healthConfig {
 	return &healthConfig{
 		appSystemCode: "appSystemCode",
-		appName: "appName",
-		port: "port",
-		srv: srv,
+		appName:       "appName",
+		port:          "port",
+		srv:           srv,
 	}
 }
 func TestCheck_DynamoDBIsHealthy(t *testing.T) {

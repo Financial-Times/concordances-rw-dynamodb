@@ -61,12 +61,12 @@ func main() {
 			*appSystemCode, *appName, *port, *dynamoDbTableName, *awsRegion, *snsTopicArn)
 
 		conf := concordances.AppConfig{
-			AWSRegion: *awsRegion,
+			AWSRegion:         *awsRegion,
 			DynamoDbTableName: *dynamoDbTableName,
-			SnsTopic: *snsTopicArn,
-			AppSystemCode: *appSystemCode,
-			AppName: *appName,
-			Port: *port,
+			SnsTopic:          *snsTopicArn,
+			AppSystemCode:     *appSystemCode,
+			AppName:           *appName,
+			Port:              *port,
 		}
 
 		router := mux.NewRouter()
@@ -85,4 +85,3 @@ func main() {
 		return
 	}
 }
-

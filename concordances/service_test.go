@@ -1,19 +1,19 @@
 package concordances
 
 import (
-	"testing"
-	"github.com/stretchr/testify/assert"
 	db "github.com/Financial-Times/concordances-rw-dynamodb/dynamodb"
 	"github.com/Financial-Times/concordances-rw-dynamodb/sns"
+	"github.com/stretchr/testify/assert"
 	"reflect"
+	"testing"
 )
 
 func creatService(ddbClient db.DynamoDbClient, snsClient sns.SnsClient) ConcordancesRwService {
 	return ConcordancesRwService{
 		DynamoDbTable: "TestTable",
-		AwsRegion: "TestRegion",
-		ddb: ddbClient,
-		sns: snsClient,
+		AwsRegion:     "TestRegion",
+		ddb:           ddbClient,
+		sns:           snsClient,
 	}
 }
 

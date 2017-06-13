@@ -1,17 +1,17 @@
 package concordances
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	db "github.com/Financial-Times/concordances-rw-dynamodb/dynamodb"
 	status "github.com/Financial-Times/service-status-go/httphandlers"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	db "github.com/Financial-Times/concordances-rw-dynamodb/dynamodb"
-	"bytes"
-	"io"
 )
 
 const (
@@ -26,7 +26,7 @@ var h ConcordancesRwHandler
 func init() {
 	router = mux.NewRouter()
 	srv := &MockService{}
-	h = ConcordancesRwHandler{srv:srv}
+	h = ConcordancesRwHandler{srv: srv}
 	h.registerApiHandlers(router)
 }
 
@@ -248,7 +248,7 @@ func TestBadBody(t *testing.T) {
 }
 
 func TestAdminHandlers(t *testing.T) {
-	adminHandlers := map[string]string {
+	adminHandlers := map[string]string{
 		status.PingPath:      "pong",
 		status.BuildInfoPath: "",
 		status.GTGPath:       "",
@@ -269,7 +269,3 @@ func TestAdminHandlers(t *testing.T) {
 			})
 	}
 }
-
-
-
-

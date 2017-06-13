@@ -1,4 +1,5 @@
 package concordances
+
 //This file contains common fixtures shared by all test files in this package
 import (
 	db "github.com/Financial-Times/concordances-rw-dynamodb/dynamodb"
@@ -8,8 +9,8 @@ import (
 )
 
 const (
-	DDB_ERROR = "DynamoDB error"
-	SNS_ERROR = "SNS error"
+	DDB_ERROR     = "DynamoDB error"
+	SNS_ERROR     = "SNS error"
 	EXPECTED_UUID = "uuid_123"
 )
 
@@ -17,11 +18,11 @@ var oldModel = db.Model{UUID: EXPECTED_UUID, ConcordedIds: []string{"A", "B"}}
 var updateModel = db.Model{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
 
 type MockSnsClient struct {
-	Happy bool
+	Happy   bool
 	Invoked bool
 }
 
-func (c *MockSnsClient) SendMessage(uuid string) (error) {
+func (c *MockSnsClient) SendMessage(uuid string) error {
 	c.Invoked = true
 	if c.Happy {
 		return nil
@@ -41,7 +42,7 @@ func (ddb *MockDynamoDbClient) Read(uuid string) (db.Model, error) {
 	return db.Model{}, errors.New(DDB_ERROR)
 }
 
-func (ddb *MockDynamoDbClient)  Write(m db.Model) (db.Model, error) {
+func (ddb *MockDynamoDbClient) Write(m db.Model) (db.Model, error) {
 	if !ddb.Happy {
 		return db.Model{}, errors.New(DDB_ERROR)
 	}
@@ -91,14 +92,14 @@ func (mock *MockService) Count() (int64, error) {
 	return mock.count, mock.err
 }
 
-func (mock *MockService) getDbClient() (db.DynamoDbClient) {
+func (mock *MockService) getDbClient() db.DynamoDbClient {
 	if mock.err != nil {
 		return &MockDynamoDbClient{Happy: false}
 	}
 	return &MockDynamoDbClient{Happy: true}
 }
 
-func (mock *MockService) getSnsClient() (sns.SnsClient) {
+func (mock *MockService) getSnsClient() sns.SnsClient {
 	if mock.err != nil {
 		return &MockSnsClient{Happy: false}
 	}

@@ -1,13 +1,13 @@
 package sns
 
 import (
-	"github.com/aws/aws-sdk-go/service/sns"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sns/snsiface"
-	"github.com/aws/aws-sdk-go/aws"
 	"fmt"
-	"strings"
 	log "github.com/Sirupsen/logrus"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go/service/sns/snsiface"
+	"strings"
 )
 
 const (
@@ -20,8 +20,8 @@ type SnsClient interface {
 }
 
 type SnsClientImpl struct {
-	client snsiface.SNSAPI
-	topicArn string
+	client    snsiface.SNSAPI
+	topicArn  string
 	awsRegion string
 }
 
@@ -41,7 +41,7 @@ func (c *SnsClientImpl) message(uuid string) *string {
 func (c *SnsClientImpl) SendMessage(uuid string) (err error) {
 
 	params := &sns.PublishInput{
-		Message: c.message(uuid),
+		Message:  c.message(uuid),
 		TopicArn: aws.String(c.topicArn),
 	}
 	resp, err := c.client.Publish(params)
@@ -51,4 +51,3 @@ func (c *SnsClientImpl) SendMessage(uuid string) (err error) {
 	}
 	return err
 }
-

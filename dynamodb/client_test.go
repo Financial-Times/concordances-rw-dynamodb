@@ -1,31 +1,33 @@
 package dynamodbclient
 
 import (
-	"testing"
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/stretchr/testify/assert"
 	"reflect"
-	"fmt"
-	"github.com/aws/aws-sdk-go/aws/credentials"
+	"testing"
 )
+
 const (
-	UUID = "4f50b156-6c50-4693-b835-02f70d3f3bc0"
-	DDB_TABLE = "upp-concordance-store-semantic"
-	AWS_REGION = "eu-west-1"
+	UUID         = "4f50b156-6c50-4693-b835-02f70d3f3bc0"
+	DDB_TABLE    = "upp-concordance-store-semantic"
+	AWS_REGION   = "eu-west-1"
 	DDB_ENDPOINT = "http://localhost:8000"
 )
+
 var goodModel = Model{
-	UUID: UUID,
+	UUID:         UUID,
 	ConcordedIds: []string{"7c4b3931-361f-4ea4-b694-75d1630d7746", "1e5c86f8-3f38-4b6b-97ce-f75489ac3113"},
 }
 
 var db *dynamodb.DynamoDB
 var c DynamoDbClientImpl
 
-var DescribeTableParams = &dynamodb.DescribeTableInput{	TableName: aws.String(DDB_TABLE)}
+var DescribeTableParams = &dynamodb.DescribeTableInput{TableName: aws.String(DDB_TABLE)}
 
 func init() {
 	fmt.Println("Create DynamoDb \n")
@@ -47,8 +49,8 @@ func setupDynamoDBLocal() *dynamodb.DynamoDB {
 	t := &testing.T{}
 	assert := assert.New(t)
 	sess, err := session.NewSession(&aws.Config{
-		Region:   aws.String(AWS_REGION),
-		Endpoint: aws.String(DDB_ENDPOINT),
+		Region:      aws.String(AWS_REGION),
+		Endpoint:    aws.String(DDB_ENDPOINT),
 		Credentials: credentials.NewEnvCredentials(),
 	})
 	assert.NoError(err, "Should be able to create a session talking to local DynamoDB. Make sure this is running")
@@ -63,21 +65,21 @@ func createTableIfNotExists(t *testing.T) error {
 
 			if awsErr.Code() == dynamodb.ErrCodeResourceNotFoundException {
 				params := &dynamodb.CreateTableInput{
-					AttributeDefinitions: []*dynamodb.AttributeDefinition{// Required
-						{// Required
-							AttributeName: aws.String(TableHashKey), // Required
+					AttributeDefinitions: []*dynamodb.AttributeDefinition{ // Required
+						{ // Required
+							AttributeName: aws.String(TableHashKey),                  // Required
 							AttributeType: aws.String(dynamodb.ScalarAttributeTypeS), // Required
 						},
 						// More values...
 					},
-					KeySchema: []*dynamodb.KeySchemaElement{// Required
-						{// Required
-							AttributeName: aws.String(TableHashKey), // Required
+					KeySchema: []*dynamodb.KeySchemaElement{ // Required
+						{ // Required
+							AttributeName: aws.String(TableHashKey),         // Required
 							KeyType:       aws.String(dynamodb.KeyTypeHash), // Required
 						},
 						// More values...
 					},
-					ProvisionedThroughput: &dynamodb.ProvisionedThroughput{// Required
+					ProvisionedThroughput: &dynamodb.ProvisionedThroughput{ // Required
 						ReadCapacityUnits:  aws.Int64(5), // Required
 						WriteCapacityUnits: aws.Int64(5), // Required
 					},
@@ -95,14 +97,14 @@ func createTableIfNotExists(t *testing.T) error {
 	return err
 }
 
-func deleteTableIfExists(t* testing.T) error {
+func deleteTableIfExists(t *testing.T) error {
 	input := &dynamodb.DeleteTableInput{TableName: aws.String(DDB_TABLE)}
 	_, err := db.DeleteTable(input)
-	if  err == nil{
+	if err == nil {
 		return nil
 	} else if err.(awserr.Error).Code() != dynamodb.ErrCodeResourceNotFoundException {
 		assert.Fail(t, "Failed to delete table. ", err.Error())
-	}else {
+	} else {
 		t.Log("Table doesn't exist")
 	}
 	return err
@@ -133,7 +135,6 @@ func TestCreateTableIfNotExists(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-
 func TestUpdateInputIsValid(t *testing.T) {
 	input, err := c.getUpdateInput(goodModel)
 
@@ -149,7 +150,7 @@ func TestCreateConcordance(t *testing.T) {
 
 	assert.NoError(t, err, "Failed to write concordance.")
 	assert.Empty(t, oldModel.UUID)
-	newModel, err := c.Read(UUID);
+	newModel, err := c.Read(UUID)
 	assert.True(t, reflect.DeepEqual(goodModel, newModel), "Failed to create concordance record")
 }
 
@@ -160,12 +161,12 @@ func TestUpdateConcordance(t *testing.T) {
 	_, err := c.Write(goodModel)
 	assert.NoError(t, err, "Failed to write concordance.")
 	newModel := Model{
-		UUID: "4f50b156-6c50-4693-b835-02f70d3f3bc0",
+		UUID:         "4f50b156-6c50-4693-b835-02f70d3f3bc0",
 		ConcordedIds: []string{"7c4b3931-361f-4ea4-b694-75d1630d7746"},
 	}
 	oldModel, err := c.Write(newModel)
 
-	updatedModel, err := c.Read(UUID);
+	updatedModel, err := c.Read(UUID)
 
 	assert.True(t, reflect.DeepEqual(goodModel, oldModel), "Failed to retrive old concordance record")
 	assert.True(t, reflect.DeepEqual(newModel, updatedModel), "Failed to update concordance record")
@@ -217,4 +218,3 @@ func TestReadNonExistingConcordance(t *testing.T) {
 	assert.Empty(t, model.UUID, "Failed to retrive old concordance record upon deletion")
 	assert.Empty(t, model.ConcordedIds, "Failed to retrive old concordance record upon deletion")
 }
-

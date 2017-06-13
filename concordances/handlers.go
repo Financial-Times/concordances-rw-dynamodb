@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	db "github.com/Financial-Times/concordances-rw-dynamodb/dynamodb"
 	health "github.com/Financial-Times/go-fthealth/v1_1"
 	"github.com/Financial-Times/http-handlers-go/httphandlers"
 	status "github.com/Financial-Times/service-status-go/httphandlers"
@@ -15,8 +16,6 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
-	db "github.com/Financial-Times/concordances-rw-dynamodb/dynamodb"
-
 )
 
 const (
@@ -36,13 +35,12 @@ const (
 var uuidRegex = regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
 
 type ConcordancesRwHandler struct {
-	srv           Service
-	conf 	      AppConfig
-
+	srv  Service
+	conf AppConfig
 }
 
 func NewConcordanceRwHandler(router *mux.Router, conf AppConfig, srv Service) ConcordancesRwHandler {
-	h := ConcordancesRwHandler{srv:srv, conf:conf}
+	h := ConcordancesRwHandler{srv: srv, conf: conf}
 	healthchkConfig := &healthConfig{appSystemCode: h.conf.AppSystemCode, appName: h.conf.AppName, port: h.conf.Port, srv: srv}
 	h.registerAdminHandlers(router, healthchkConfig)
 	h.registerApiHandlers(router)
