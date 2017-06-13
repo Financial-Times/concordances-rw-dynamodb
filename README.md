@@ -1,5 +1,5 @@
 # concordances-rw-dynamodb
-[![Circle CI](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb/tree/master.png?style=shield)](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb/tree/master)[![Go Report Card](https://goreportcard.com/badge/github.com/Financial-Times/concordances-rw-dynamodb)](https://goreportcard.com/report/github.com/Financial-Times/concordances-rw-dynamodb) [![Coverage Status](https://coveralls.io/repos/github/Financial-Times/concordances-rw-dynamodb/badge.svg)](https://coveralls.io/github/Financial-Times/concordances-rw-dynamodb)
+[![Circle CI](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb.svg?style=shield)](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb)[![Go Report Card](https://goreportcard.com/badge/github.com/Financial-Times/concordances-rw-dynamodb)](https://goreportcard.com/report/github.com/Financial-Times/concordances-rw-dynamodb) [![Coverage Status](https://coveralls.io/repos/github/Financial-Times/concordances-rw-dynamodb/badge.svg)](https://coveralls.io/github/Financial-Times/concordances-rw-dynamodb)
 
 ## Introduction
 
@@ -55,6 +55,7 @@ _How can I build and deploy it (lots of this will be links out as the steps will
 
 * Built by Docker Hub on merge to master: [coco/concordances-rw-dynamodb](https://hub.docker.com/r/coco/concordances-rw-dynamodb/)
 * CI provided by CircleCI: [concordances-rw-dynamodb](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb)
+* Code Coverage provided by coveralls.io [concordances-rw-dynamodb](https://coveralls.io/github/Financial-Times/concordances-rw-dynamodb)
 
 ## API 
 * Based on the following [google doc](https://docs.google.com/document/d/1SFm7NwULX0nGqzfoX5JQGWZcd918YBwEGuO10kULovQ/edit?ts=591d86df#)   
@@ -128,7 +129,8 @@ _request:_
 
 There are several checks performed:  
  
-* Checks that DynamoDB table is accessible, using parameters supplied on service startup.  
+* Checks that DynamoDB table is accessible, using parameters supplied on service startup. 
+ * Checks that SNS topic is accessible, using parameters supplied on service startup. 
 
 See the api/api.yml for the swagger definitions of these endpoints  
 

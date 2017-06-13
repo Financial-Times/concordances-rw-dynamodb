@@ -43,7 +43,8 @@ type ConcordancesRwHandler struct {
 
 func NewConcordanceRwHandler(router *mux.Router, conf AppConfig, srv Service) ConcordancesRwHandler {
 	h := ConcordancesRwHandler{srv:srv, conf:conf}
-	h.registerAdminHandlers(router)
+	healthchkConfig := &healthConfig{appSystemCode: h.conf.AppSystemCode, appName: h.conf.AppName, port: h.conf.Port, srv: srv}
+	h.registerAdminHandlers(router, healthchkConfig)
 	h.registerApiHandlers(router)
 	return h
 }
@@ -69,13 +70,9 @@ func (h *ConcordancesRwHandler) registerApiHandlers(router *mux.Router) {
 	router.Handle("/", http.HandlerFunc(h.HandleBadRequest))
 }
 
-func (h *ConcordancesRwHandler) registerAdminHandlers(router *mux.Router) {
+func (h *ConcordancesRwHandler) registerAdminHandlers(router *mux.Router, config *healthConfig) {
 	log.Info("Registering admin handlers")
-	healthService := newHealthService(&healthConfig{appSystemCode: h.conf.AppSystemCode, appName: h.conf.AppName, port: h.conf.Port,
-		DynamoDbTable: h.conf.DynamoDbTableName,
-		AwsRegion: h.conf.AWSRegion,
-		SnsTopic: h.conf.SnsTopic,
-	})
+	healthService := newHealthService(config)
 	hc := health.HealthCheck{SystemCode: h.conf.AppSystemCode, Name: h.conf.AppName, Description: "Stores concordances in cache and notifies downstream services", Checks: healthService.checks}
 	router.HandleFunc(healthPath, health.Handler(hc))
 	router.HandleFunc(status.PingPath, status.PingHandler)

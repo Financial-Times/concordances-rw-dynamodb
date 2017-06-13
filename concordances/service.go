@@ -19,6 +19,8 @@ type Service interface {
 	Write(m db.Model) (created bool, err error)
 	Delete(uuid string) (bool, error)
 	Count() (int64, error)
+	getDbClient() (db.DynamoDbClient)
+	getSnsClient() (sns.SnsClient)
 }
 
 type ConcordancesRwService struct {
@@ -66,4 +68,11 @@ func (s *ConcordancesRwService) Delete(uuid string) (bool, error) {
 func (s *ConcordancesRwService) Count() (int64, error) {
 	//not implemented
 	return 0, nil
+}
+
+func (s *ConcordancesRwService) getDbClient() (db.DynamoDbClient) {
+	return s.ddb
+}
+func (s *ConcordancesRwService) getSnsClient() (sns.SnsClient) {
+	return s.sns
 }

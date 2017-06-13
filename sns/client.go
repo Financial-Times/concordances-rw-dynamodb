@@ -41,10 +41,10 @@ func (c *SnsClientImpl) message(uuid string) *string {
 func (c *SnsClientImpl) SendMessage(uuid string) (err error) {
 
 	params := &sns.PublishInput{
-		Message: c.message(uuid), // This is the message itself (can be XML / JSON / Text - anything you want)
+		Message: c.message(uuid),
 		TopicArn: aws.String(c.topicArn),
 	}
-	resp, err := c.client.Publish(params)   //Call to publish the message
+	resp, err := c.client.Publish(params)
 
 	if resp != nil {
 		log.Infof("Concordance Notification for concept uuid [%s] was posted to topic[%s]. SNS response: %s", uuid, c.topicArn, resp.String())

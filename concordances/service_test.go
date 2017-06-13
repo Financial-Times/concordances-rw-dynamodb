@@ -1,18 +1,11 @@
 package concordances
+
 import (
 	"testing"
 	"github.com/stretchr/testify/assert"
 	db "github.com/Financial-Times/concordances-rw-dynamodb/dynamodb"
 	"github.com/Financial-Times/concordances-rw-dynamodb/sns"
-
 	"reflect"
-	"errors"
-
-)
-const (
-	DDB_ERROR = "DynamoDB error"
-	SNS_ERROR = "SNS error"
-	EXPECTED_UUID = "uuid_123"
 )
 
 func creatService(ddbClient db.DynamoDbClient, snsClient sns.SnsClient) ConcordancesRwService {
@@ -22,63 +15,6 @@ func creatService(ddbClient db.DynamoDbClient, snsClient sns.SnsClient) Concorda
 		ddb: ddbClient,
 		sns: snsClient,
 	}
-}
-
-
-var oldModel = db.Model{UUID: EXPECTED_UUID, ConcordedIds: []string{"A", "B"}}
-var updateModel = db.Model{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
-
-type MockSnsClient struct {
-	Happy bool
-	Invoked bool
-}
-
-func (c *MockSnsClient) SendMessage(uuid string) (error) {
-	c.Invoked = true
-	if c.Happy {
-		return nil
-	}
-	return errors.New(SNS_ERROR)
-}
-
-type MockDynamoDbClient struct {
-	Happy bool
-	model db.Model
-}
-
-func (ddb *MockDynamoDbClient) Read(uuid string) (db.Model, error) {
-	if ddb.Happy {
-		return oldModel, nil
-	}
-	return db.Model{}, errors.New(DDB_ERROR)
-}
-
-func (ddb *MockDynamoDbClient)  Write(m db.Model) (db.Model, error) {
-	if !ddb.Happy {
-		return db.Model{}, errors.New(DDB_ERROR)
-	}
-
-	if ddb.model.UUID == "" {
-		ddb.model = m
-		return db.Model{}, nil
-
-	}
-	ddb.model = m
-	return oldModel, nil
-}
-
-func (ddb *MockDynamoDbClient) Delete(uuid string) (db.Model, error) {
-	if !ddb.Happy {
-		return db.Model{}, errors.New(DDB_ERROR)
-	}
-	if ddb.model.UUID == "" {
-		return db.Model{}, nil
-	}
-	return oldModel, nil
-}
-func (ddb *MockDynamoDbClient) Count() (int64, error) {
-
-	return 0, nil
 }
 
 func TestServiceRead_NoError(t *testing.T) {

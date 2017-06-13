@@ -23,28 +23,6 @@ const (
 var router *mux.Router
 var h ConcordancesRwHandler
 
-type MockService struct {
-	model   db.Model
-	created bool
-	deleted bool
-	count   int64
-	err     error
-}
-
-func (mock *MockService) Read(uuid string) (db.Model, error) {
-	return mock.model, mock.err
-}
-
-func (mock *MockService) Write(m db.Model) (bool, error) {
-	return mock.created, mock.err
-}
-func (mock *MockService) Delete(uuid string) (bool, error) {
-	return mock.deleted, mock.err
-}
-func (mock *MockService) Count() (int64, error) {
-	return mock.count, mock.err
-}
-
 func init() {
 	router = mux.NewRouter()
 	srv := &MockService{}
