@@ -42,7 +42,7 @@ func main() {
 	})
 	dynamoDbTableName := app.String(cli.StringOpt{
 		Name:   "dynamoDbTableName",
-		Value:  "upp-concordance-store-semantic",
+		Value:  "upp-concordance-store-test",
 		Desc:   "Name of DynamoDB Table",
 		EnvVar: "DYNAMODB_TABLE_NAME",
 	})
@@ -63,7 +63,7 @@ func main() {
 		conf := concordances.AppConfig{
 			AWSRegion:         *awsRegion,
 			DynamoDbTableName: *dynamoDbTableName,
-			SnsTopic:          *snsTopicArn,
+			SNSTopic:          *snsTopicArn,
 			AppSystemCode:     *appSystemCode,
 			AppName:           *appName,
 			Port:              *port,
@@ -71,10 +71,10 @@ func main() {
 
 		router := mux.NewRouter()
 		srv := concordances.NewConcordancesRwService(conf)
-		concordances.NewConcordanceRwHandler(router, conf, srv)
+		concordances.NewHandler(router, conf, srv)
 
 		log.Infof("Listening on %v", *port)
-		if err := http.ListenAndServe(":"+*port, nil); err != nil {
+		if err := http.ListenAndServe(":"+*port, router); err != nil {
 			log.Fatalf("Unable to start server: %v", err)
 		}
 

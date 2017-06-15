@@ -12,42 +12,36 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
-	"io/ioutil"
 	"net/http"
-	"regexp"
 	"strconv"
 )
 
 const (
-	CONCORDANCES                 = "concordances"
 	ContentTypeJson              = "application/json"
 	UUID_Param                   = "uuid"
 	ErrorMsgJson                 = "{\"message\":\"%s\"}"
 	LogMsg503                    = "Error %s concordances"
 	LogMsg404                    = "Concordances not found"
-	ErrorMsg_BadPath             = "Invalid path."
 	ErrorMsg_BadBody             = "Invalid payload."
-	ErrorMsg_MismatchedConceptId = "Concept uuid in payload is different from uuid path parameter"
-	ErrorMsg_MissingConcoredeIds = "Payload has no concorded uuids to store."
+	ErrorMsg_MismatchedConceptId = "Concept UUID in payload is different from UUID path parameter"
+	ErrorMsg_MissingConcordedIds = "Payload has no concorded UUIDs to store."
 	ErrorMsg_BadJson             = "Corrupted JSON"
 )
 
-var uuidRegex = regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
-
-type ConcordancesRwHandler struct {
+type Handler struct {
 	srv  Service
 	conf AppConfig
 }
 
-func NewConcordanceRwHandler(router *mux.Router, conf AppConfig, srv Service) ConcordancesRwHandler {
-	h := ConcordancesRwHandler{srv: srv, conf: conf}
-	healthchkConfig := &healthConfig{appSystemCode: h.conf.AppSystemCode, appName: h.conf.AppName, port: h.conf.Port, srv: srv}
-	h.registerAdminHandlers(router, healthchkConfig)
-	h.registerApiHandlers(router)
+func NewHandler(router *mux.Router, conf AppConfig, srv Service) Handler {
+	h := Handler{srv: srv, conf: conf}
+	healthcheckConfig := &healthConfig{appSystemCode: h.conf.AppSystemCode, appName: h.conf.AppName, port: h.conf.Port, srv: srv}
+	h.registerAdminHandlers(router, healthcheckConfig)
+	h.registerAPIHandlers(router)
 	return h
 }
 
-func (h *ConcordancesRwHandler) registerApiHandlers(router *mux.Router) {
+func (h *Handler) registerAPIHandlers(router *mux.Router) {
 	log.Info("Registering API handlers")
 
 	rwHandler := handlers.MethodHandler{
@@ -60,95 +54,76 @@ func (h *ConcordancesRwHandler) registerApiHandlers(router *mux.Router) {
 	}
 
 	router.Handle("/concordances/__count", countHandler)
-	router.Handle("/{concordances}/{uuid}", rwHandler)
-
-	//Invalid path patterns
-	router.Handle("/{concordances}/", http.HandlerFunc(h.HandleBadRequest))
-	router.Handle("/{concordances}", http.HandlerFunc(h.HandleBadRequest))
-	router.Handle("/", http.HandlerFunc(h.HandleBadRequest))
+	router.Handle("/concordances/{uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", rwHandler)
 }
 
-func (h *ConcordancesRwHandler) registerAdminHandlers(router *mux.Router, config *healthConfig) {
+func (h *Handler) registerAdminHandlers(router *mux.Router, config *healthConfig) {
 	log.Info("Registering admin handlers")
 	healthService := newHealthService(config)
 	hc := health.HealthCheck{SystemCode: h.conf.AppSystemCode, Name: h.conf.AppName, Description: "Stores concordances in cache and notifies downstream services", Checks: healthService.checks}
 	router.HandleFunc(healthPath, health.Handler(hc))
-	router.HandleFunc(status.PingPath, status.PingHandler)
 	router.HandleFunc(status.GTGPath, status.NewGoodToGoHandler(healthService.gtgCheck))
 	router.HandleFunc(status.BuildInfoPath, status.BuildInfoHandler)
 
 	monitoringRouter := httphandlers.TransactionAwareRequestLoggingHandler(log.StandardLogger(), router)
 	monitoringRouter = httphandlers.HTTPMetricsHandler(metrics.DefaultRegistry, monitoringRouter)
-	http.Handle("/", monitoringRouter)
 }
 
-func (h *ConcordancesRwHandler) HandleGet(rw http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleGet(rw http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	//400
-	if h.invalidPath(vars) {
-		h.HandleBadRequest(rw, r)
-		return
-	}
 	uuid := vars[UUID_Param]
 	model, err := h.srv.Read(uuid)
 
 	//503
 	if err != nil {
-		h.handleServiceUnavailable("retrieving", err.Error(), rw, r)
+		logMsg := fmt.Sprintf(LogMsg503, "retrieving")
+		log.Errorf("%s %s", logMsg, err.Error())
+		writeJSONError(rw, logMsg, http.StatusServiceUnavailable)
 		return
 	}
 	//404
 	if model.ConcordedIds == nil {
-		h.handleNotFound(uuid, rw, r)
+		log.Infof("%s for %s", LogMsg404, uuid)
+		writeJSONError(rw, LogMsg404, http.StatusNotFound)
 		return
 	}
 
-	output, err := json.Marshal(&model)
-	//404
-	if err != nil {
-		h.handleNotFound(uuid, rw, r)
-		return
-	}
 	//200
 	rw.Header().Set("Content-Type", ContentTypeJson)
 	rw.WriteHeader(http.StatusOK)
-	rw.Write(output)
+	json.NewEncoder(rw).Encode(&model)
 }
 
-func (h *ConcordancesRwHandler) HandlePut(rw http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandlePut(rw http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	//400
-	if h.invalidPath(vars) {
-		h.HandleBadRequest(rw, r)
-		return
-	}
 	uuid := vars[UUID_Param]
 	if r.ContentLength <= 0 {
-		h.handleBadPayload(ErrorMsg_BadJson, rw, r)
+		logMsg := fmt.Sprintf("%s Error: %s", ErrorMsg_BadBody, ErrorMsg_BadJson)
+		log.Infof(logMsg)
+		writeJSONError(rw, logMsg, http.StatusBadRequest)
 		return
 	}
-	body, err := ioutil.ReadAll(r.Body)
+	model := db.ConcordancesModel{}
+	err := json.NewDecoder(r.Body).Decode(&model)
 	defer r.Body.Close()
-	//400
-	if err != nil {
-		h.handleBadPayload(ErrorMsg_BadJson, rw, r)
-		return
-	}
 
-	model := db.Model{}
-	err = json.Unmarshal(body, &model)
 	//400
 	if err != nil {
-		h.handleBadPayload(ErrorMsg_BadJson, rw, r)
+		logMsg := fmt.Sprintf("%s Error: %s", ErrorMsg_BadBody, ErrorMsg_BadJson)
+		log.Infof(logMsg)
+		writeJSONError(rw, logMsg, http.StatusBadRequest)
 		return
 	}
 
 	err = h.invalidModel(uuid, model)
 	//400
 	if err != nil {
-		h.handleBadPayload(err.Error(), rw, r)
+		logMsg := fmt.Sprintf("%s Error: %s", ErrorMsg_BadBody, err.Error())
+		log.Infof(logMsg)
+		writeJSONError(rw, logMsg, http.StatusBadRequest)
 		return
 	}
 
@@ -156,7 +131,9 @@ func (h *ConcordancesRwHandler) HandlePut(rw http.ResponseWriter, r *http.Reques
 
 	//503
 	if err != nil {
-		h.handleServiceUnavailable("storing", err.Error(), rw, r)
+		logMsg := fmt.Sprintf(LogMsg503, "storing")
+		log.Errorf("%s %s", logMsg, err.Error())
+		writeJSONError(rw, logMsg, http.StatusServiceUnavailable)
 		return
 	}
 
@@ -168,34 +145,34 @@ func (h *ConcordancesRwHandler) HandlePut(rw http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (h *ConcordancesRwHandler) HandleDelete(rw http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleDelete(rw http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	//400
-	if h.invalidPath(vars) {
-		h.HandleBadRequest(rw, r)
-		return
-	}
 	uuid := vars[UUID_Param]
 	deleted, err := h.srv.Delete(uuid)
 	//503
 	if err != nil {
-		h.handleServiceUnavailable("deleting", err.Error(), rw, r)
+		logMsg := fmt.Sprintf(LogMsg503, "deleting")
+		log.Errorf("%s %s", logMsg, err.Error())
+		writeJSONError(rw, logMsg, http.StatusServiceUnavailable)
 		return
 	}
 	//404
 	if !deleted {
-		h.handleNotFound(uuid, rw, r)
+		log.Infof("%s for %s", LogMsg404, uuid)
+		writeJSONError(rw, LogMsg404, http.StatusNotFound)
 		return
 	}
 	//204
 	rw.WriteHeader(http.StatusNoContent)
 }
 
-func (h *ConcordancesRwHandler) HandleCount(rw http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleCount(rw http.ResponseWriter, r *http.Request) {
 	count, err := h.srv.Count()
 	//503
 	if err != nil {
-		h.handleServiceUnavailable("counting", err.Error(), rw, r)
+		logMsg := fmt.Sprintf(LogMsg503, "counting")
+		log.Errorf("%s %s", logMsg, err.Error())
+		writeJSONError(rw, logMsg, http.StatusServiceUnavailable)
 		return
 	}
 	//200
@@ -206,52 +183,18 @@ func (h *ConcordancesRwHandler) HandleCount(rw http.ResponseWriter, r *http.Requ
 	rw.Write(b)
 }
 
-func (h *ConcordancesRwHandler) HandleBadRequest(rw http.ResponseWriter, r *http.Request) {
-	log.Infof(fmt.Sprintf("%s: %s", ErrorMsg_BadPath, r.URL.Path))
+func writeJSONError(rw http.ResponseWriter, logMsg string, statusCode int) {
 	rw.Header().Set("Content-Type", ContentTypeJson)
-	rw.WriteHeader(http.StatusBadRequest)
-	rw.Write([]byte(fmt.Sprintf(ErrorMsgJson, ErrorMsg_BadPath)))
-	return
-}
-
-func (h *ConcordancesRwHandler) handleBadPayload(errorMsg string, rw http.ResponseWriter, r *http.Request) {
-	logMsg := fmt.Sprintf("%s Error: %s", ErrorMsg_BadBody, errorMsg)
-	log.Infof(logMsg)
-	rw.Header().Set("Content-Type", ContentTypeJson)
-	rw.WriteHeader(http.StatusBadRequest)
-	rw.Write([]byte(fmt.Sprintf(ErrorMsgJson, logMsg)))
-	return
-}
-
-func (h *ConcordancesRwHandler) handleNotFound(uuid string, rw http.ResponseWriter, r *http.Request) {
-	log.Infof("%s for %s", LogMsg404, uuid)
-	rw.Header().Set("Content-Type", ContentTypeJson)
-	rw.WriteHeader(http.StatusNotFound)
-	rw.Write([]byte(fmt.Sprintf(ErrorMsgJson, LogMsg404)))
-}
-
-func (h *ConcordancesRwHandler) handleServiceUnavailable(op string, errorMsg string, rw http.ResponseWriter, r *http.Request) {
-	logMsg := fmt.Sprintf(LogMsg503, op)
-	log.Errorf("%s %s", logMsg, errorMsg)
-	rw.Header().Set("Content-Type", ContentTypeJson)
-	rw.WriteHeader(http.StatusServiceUnavailable)
+	rw.WriteHeader(statusCode)
 	rw.Write([]byte(fmt.Sprintf(ErrorMsgJson, logMsg)))
 }
 
-func (h *ConcordancesRwHandler) invalidPath(vars map[string]string) bool {
-	isUuid := uuidRegex.MatchString(vars[UUID_Param])
-	if (vars[CONCORDANCES] != CONCORDANCES) || !isUuid {
-		return true
-	}
-	return false
-}
-
-func (h *ConcordancesRwHandler) invalidModel(uuid string, model db.Model) error {
+func (h *Handler) invalidModel(uuid string, model db.ConcordancesModel) error {
 	if model.UUID != uuid {
 		return errors.New(ErrorMsg_MismatchedConceptId)
 	}
 	if (model.ConcordedIds == nil) || (len(model.ConcordedIds) < 1) {
-		return errors.New(ErrorMsg_MissingConcoredeIds)
+		return errors.New(ErrorMsg_MissingConcordedIds)
 	}
 	return nil
 }

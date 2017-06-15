@@ -1,4 +1,4 @@
-package dynamodbclient
+package dynamodb
 
 import (
 	"fmt"
@@ -14,29 +14,29 @@ import (
 
 const (
 	UUID         = "4f50b156-6c50-4693-b835-02f70d3f3bc0"
-	DDB_TABLE    = "upp-concordance-store-semantic"
+	DDB_TABLE    = "upp-concordance-store-test"
 	AWS_REGION   = "eu-west-1"
 	DDB_ENDPOINT = "http://localhost:8000"
 )
 
-var goodModel = Model{
+var goodModel = ConcordancesModel{
 	UUID:         UUID,
 	ConcordedIds: []string{"7c4b3931-361f-4ea4-b694-75d1630d7746", "1e5c86f8-3f38-4b6b-97ce-f75489ac3113"},
 }
 
 var db *dynamodb.DynamoDB
-var c DynamoDbClientImpl
+var c DynamoDBClientImpl
 
 var DescribeTableParams = &dynamodb.DescribeTableInput{TableName: aws.String(DDB_TABLE)}
 
 func init() {
 	fmt.Println("Create DynamoDb \n")
 	db = setupDynamoDBLocal()
-	c = DynamoDbClientImpl{dynamoDbTable: DDB_TABLE, awsRegion: AWS_REGION, ddb: db}
+	c = DynamoDBClientImpl{dynamoDbTable: DDB_TABLE, awsRegion: AWS_REGION, ddb: db}
 }
 func setupTestCase(t *testing.T) func(t *testing.T) {
 	t.Log("Create table \n")
-	c = DynamoDbClientImpl{dynamoDbTable: DDB_TABLE, awsRegion: AWS_REGION, ddb: db}
+	c = DynamoDBClientImpl{dynamoDbTable: DDB_TABLE, awsRegion: AWS_REGION, ddb: db}
 	createTableIfNotExists(t)
 
 	return func(t *testing.T) {
@@ -123,7 +123,7 @@ func TestDeleteNonExistentTable(t *testing.T) {
 	assert.True(t, (err.(awserr.Error).Code() == dynamodb.ErrCodeResourceNotFoundException))
 }
 
-func TestCteateTableThatAlreadyExists(t *testing.T) {
+func TestCreateTableThatAlreadyExists(t *testing.T) {
 	createTableIfNotExists(t)
 	err := createTableIfNotExists(t)
 	assert.NoError(t, err)
@@ -160,7 +160,7 @@ func TestUpdateConcordance(t *testing.T) {
 
 	_, err := c.Write(goodModel)
 	assert.NoError(t, err, "Failed to write concordance.")
-	newModel := Model{
+	newModel := ConcordancesModel{
 		UUID:         "4f50b156-6c50-4693-b835-02f70d3f3bc0",
 		ConcordedIds: []string{"7c4b3931-361f-4ea4-b694-75d1630d7746"},
 	}

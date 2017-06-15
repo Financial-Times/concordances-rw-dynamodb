@@ -14,15 +14,15 @@ const (
 	EXPECTED_UUID = "uuid_123"
 )
 
-var oldModel = db.Model{UUID: EXPECTED_UUID, ConcordedIds: []string{"A", "B"}}
-var updateModel = db.Model{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
+var oldModel = db.ConcordancesModel{UUID: EXPECTED_UUID, ConcordedIds: []string{"A", "B"}}
+var updateModel = db.ConcordancesModel{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
 
-type MockSnsClient struct {
+type MockSNSClient struct {
 	Happy   bool
 	Invoked bool
 }
 
-func (c *MockSnsClient) SendMessage(uuid string) error {
+func (c *MockSNSClient) SendMessage(uuid string) error {
 	c.Invoked = true
 	if c.Happy {
 		return nil
@@ -30,59 +30,59 @@ func (c *MockSnsClient) SendMessage(uuid string) error {
 	return errors.New(SNS_ERROR)
 }
 
-type MockDynamoDbClient struct {
+type MockDynamoDBClient struct {
 	Happy bool
-	model db.Model
+	model db.ConcordancesModel
 }
 
-func (ddb *MockDynamoDbClient) Read(uuid string) (db.Model, error) {
+func (ddb *MockDynamoDBClient) Read(uuid string) (db.ConcordancesModel, error) {
 	if ddb.Happy {
 		return oldModel, nil
 	}
-	return db.Model{}, errors.New(DDB_ERROR)
+	return db.ConcordancesModel{}, errors.New(DDB_ERROR)
 }
 
-func (ddb *MockDynamoDbClient) Write(m db.Model) (db.Model, error) {
+func (ddb *MockDynamoDBClient) Write(m db.ConcordancesModel) (db.ConcordancesModel, error) {
 	if !ddb.Happy {
-		return db.Model{}, errors.New(DDB_ERROR)
+		return db.ConcordancesModel{}, errors.New(DDB_ERROR)
 	}
 
 	if ddb.model.UUID == "" {
 		ddb.model = m
-		return db.Model{}, nil
+		return db.ConcordancesModel{}, nil
 
 	}
 	ddb.model = m
 	return oldModel, nil
 }
 
-func (ddb *MockDynamoDbClient) Delete(uuid string) (db.Model, error) {
+func (ddb *MockDynamoDBClient) Delete(uuid string) (db.ConcordancesModel, error) {
 	if !ddb.Happy {
-		return db.Model{}, errors.New(DDB_ERROR)
+		return db.ConcordancesModel{}, errors.New(DDB_ERROR)
 	}
 	if ddb.model.UUID == "" {
-		return db.Model{}, nil
+		return db.ConcordancesModel{}, nil
 	}
 	return oldModel, nil
 }
-func (ddb *MockDynamoDbClient) Count() (int64, error) {
+func (ddb *MockDynamoDBClient) Count() (int64, error) {
 
 	return 0, nil
 }
 
 type MockService struct {
-	model   db.Model
+	model   db.ConcordancesModel
 	created bool
 	deleted bool
 	count   int64
 	err     error
 }
 
-func (mock *MockService) Read(uuid string) (db.Model, error) {
+func (mock *MockService) Read(uuid string) (db.ConcordancesModel, error) {
 	return mock.model, mock.err
 }
 
-func (mock *MockService) Write(m db.Model) (bool, error) {
+func (mock *MockService) Write(m db.ConcordancesModel) (bool, error) {
 	return mock.created, mock.err
 }
 func (mock *MockService) Delete(uuid string) (bool, error) {
@@ -92,16 +92,16 @@ func (mock *MockService) Count() (int64, error) {
 	return mock.count, mock.err
 }
 
-func (mock *MockService) getDbClient() db.DynamoDbClient {
+func (mock *MockService) getDBClient() db.DynamoDBClient {
 	if mock.err != nil {
-		return &MockDynamoDbClient{Happy: false}
+		return &MockDynamoDBClient{Happy: false}
 	}
-	return &MockDynamoDbClient{Happy: true}
+	return &MockDynamoDBClient{Happy: true}
 }
 
-func (mock *MockService) getSnsClient() sns.SnsClient {
+func (mock *MockService) getSNSClient() sns.SNSClient {
 	if mock.err != nil {
-		return &MockSnsClient{Happy: false}
+		return &MockSNSClient{Happy: false}
 	}
-	return &MockSnsClient{Happy: true}
+	return &MockSNSClient{Happy: true}
 }

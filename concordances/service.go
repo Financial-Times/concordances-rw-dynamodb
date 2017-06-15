@@ -8,42 +8,42 @@ import (
 type AppConfig struct {
 	AWSRegion         string
 	DynamoDbTableName string
-	SnsTopic          string
+	SNSTopic          string
 	AppSystemCode     string
 	AppName           string
 	Port              string
 }
 
 type Service interface {
-	Read(uuid string) (db.Model, error)
-	Write(m db.Model) (created bool, err error)
+	Read(uuid string) (db.ConcordancesModel, error)
+	Write(m db.ConcordancesModel) (created bool, err error)
 	Delete(uuid string) (bool, error)
 	Count() (int64, error)
-	getDbClient() db.DynamoDbClient
-	getSnsClient() sns.SnsClient
+	getDBClient() db.DynamoDBClient
+	getSNSClient() sns.SNSClient
 }
 
 type ConcordancesRwService struct {
 	DynamoDbTable string
 	AwsRegion     string
-	ddb           db.DynamoDbClient
-	sns           sns.SnsClient
+	ddb           db.DynamoDBClient
+	sns           sns.SNSClient
 }
 
 func NewConcordancesRwService(conf AppConfig) Service {
-	ddbClient := db.NewDynamoDbClient(conf.DynamoDbTableName, conf.AWSRegion)
-	snsClient := sns.NewSnsClient(conf.SnsTopic, conf.AWSRegion)
+	ddbClient := db.NewDynamoDBClient(conf.DynamoDbTableName, conf.AWSRegion)
+	snsClient := sns.NewSNSClient(conf.SNSTopic, conf.AWSRegion)
 	s := ConcordancesRwService{DynamoDbTable: conf.DynamoDbTableName, AwsRegion: conf.AWSRegion, ddb: ddbClient, sns: snsClient}
 	return &s
 
 }
 
-func (s *ConcordancesRwService) Read(uuid string) (db.Model, error) {
+func (s *ConcordancesRwService) Read(uuid string) (db.ConcordancesModel, error) {
 	model, err := s.ddb.Read(uuid)
 	return model, err
 }
 
-func (s *ConcordancesRwService) Write(m db.Model) (created bool, err error) {
+func (s *ConcordancesRwService) Write(m db.ConcordancesModel) (created bool, err error) {
 	model, err := s.ddb.Write(m)
 	if err != nil {
 		return created, err
@@ -70,9 +70,9 @@ func (s *ConcordancesRwService) Count() (int64, error) {
 	return 0, nil
 }
 
-func (s *ConcordancesRwService) getDbClient() db.DynamoDbClient {
+func (s *ConcordancesRwService) getDBClient() db.DynamoDBClient {
 	return s.ddb
 }
-func (s *ConcordancesRwService) getSnsClient() sns.SnsClient {
+func (s *ConcordancesRwService) getSNSClient() sns.SNSClient {
 	return s.sns
 }

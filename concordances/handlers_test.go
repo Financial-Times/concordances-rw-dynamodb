@@ -17,17 +17,17 @@ import (
 const (
 	TestConceptUuid = "4f50b156-6c50-4693-b835-02f70d3f3bc0"
 	Path            = "/concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0"
-	GoodBody        = "{\"conceptId\":\"4f50b156-6c50-4693-b835-02f70d3f3bc0\",\"concordedIds\":[\"1\",\"2\"]}"
+	GoodBody        = "{\"conceptId\":\"4f50b156-6c50-4693-b835-02f70d3f3bc0\",\"concordedIds\":[\"1\",\"2\"]}\n"
 )
 
 var router *mux.Router
-var h ConcordancesRwHandler
+var h Handler
 
 func init() {
 	router = mux.NewRouter()
 	srv := &MockService{}
-	h = ConcordancesRwHandler{srv: srv}
-	h.registerApiHandlers(router)
+	h = Handler{srv: srv}
+	h.registerAPIHandlers(router)
 }
 
 func newRequest(method, url string, body string) *http.Request {
@@ -43,108 +43,89 @@ func newRequest(method, url string, body string) *http.Request {
 	return req
 }
 
-type TestCase struct {
-	description          string
-	request              *http.Request
-	expectedResponseCode int
-	expectedContentType  string
-	expectedResponseBody string
-	service              Service
-	errorOp              string
-}
+func TestHandler_ResponseCodesAndMessages(t *testing.T) {
+	testCases := []struct{
+		description          string
+		request              *http.Request
+		expectedResponseCode int
+		expectedContentType  string
+		expectedResponseBody string
+		service              Service
+		errorOp              string
+	}{
+		{
+			description:          "GET 503 Service Not Available",
+			request:              newRequest("GET", Path, ""),
+			service:              &MockService{err: errors.New("")},
+			expectedResponseCode: 503,
+			expectedContentType:  ContentTypeJson,
+			errorOp:              "retrieving",
+		},
+		{
+			description:          "PUT 503 Service Not Available",
+			request:              newRequest("PUT", Path, GoodBody),
+			service:              &MockService{err: errors.New("")},
+			expectedResponseCode: 503,
+			expectedContentType:  ContentTypeJson,
+			errorOp:              "storing",
+		},
+		{
+			description:          "DELETE 503 Service Not Available",
+			request:              newRequest("DELETE", Path, GoodBody),
+			service:              &MockService{err: errors.New("")},
+			expectedResponseCode: 503,
+			expectedContentType:  ContentTypeJson,
+			errorOp:              "deleting",
+		},
+		{description: "COUNT 503 Service Not Available",
+			request:              newRequest("GET", "/concordances/__count", ""),
+			service:              &MockService{err: errors.New("")},
+			expectedResponseCode: 503,
+			expectedContentType:  ContentTypeJson,
+			errorOp:              "counting",
+		},
+		{
+			description:          "GET 404 Not Found",
+			request:              newRequest("GET", Path, ""),
+			service:              &MockService{model: db.ConcordancesModel{}},
+			expectedResponseCode: 404,
+			expectedContentType:  ContentTypeJson,
+		},
+		{
+			description:          "DELETE 404 Not Found",
+			request:              newRequest("DELETE", Path, ""),
+			service:              &MockService{deleted: false},
+			expectedResponseCode: 404,
+			expectedContentType:  ContentTypeJson,
+		},
+		{
+			description:          "DELETE 204 Deleted",
+			request:              newRequest("DELETE", Path, ""),
+			service:              &MockService{deleted: true},
+			expectedResponseCode: 204,
+		},
+		{
+			description:          "PUT 201 Created",
+			request:              newRequest("PUT", Path, GoodBody),
+			service:              &MockService{created: true},
+			expectedResponseCode: 201,
+		},
+		{
+			description:          "PUT 200 Updated",
+			request:              newRequest("PUT", Path, GoodBody),
+			service:              &MockService{created: false},
+			expectedResponseCode: 200,
+		},
+		{
+			description:          "GET 200 OK",
+			request:              newRequest("GET", Path, ""),
+			service:              &MockService{model: db.ConcordancesModel{UUID: TestConceptUuid, ConcordedIds: []string{"1", "2"}}},
+			expectedResponseCode: 200,
+			expectedResponseBody: GoodBody,
+		},
+	}
 
-var GET_503 = TestCase{
-	description:          "GET Service Not Available",
-	request:              newRequest("GET", Path, ""),
-	service:              &MockService{err: errors.New("")},
-	expectedResponseCode: 503,
-	expectedContentType:  ContentTypeJson,
-	errorOp:              "retrieving",
-}
-
-var PUT_503 = TestCase{
-
-	description:          "PUT Service Not Available",
-	request:              newRequest("PUT", Path, GoodBody),
-	service:              &MockService{err: errors.New("")},
-	expectedResponseCode: 503,
-	expectedContentType:  ContentTypeJson,
-	errorOp:              "storing",
-}
-
-var DELETE_503 = TestCase{
-	description:          "DELETE Service Not Available",
-	request:              newRequest("DELETE", Path, GoodBody),
-	service:              &MockService{err: errors.New("")},
-	expectedResponseCode: 503,
-	expectedContentType:  ContentTypeJson,
-	errorOp:              "deleting",
-}
-
-var COUNT_503 = TestCase{description: "Service Not Available",
-	request:              newRequest("GET", "/concordances/__count", ""),
-	service:              &MockService{err: errors.New("")},
-	expectedResponseCode: 503,
-	expectedContentType:  ContentTypeJson,
-	errorOp:              "counting",
-}
-
-var GET_404 = TestCase{
-	description:          "GET Not Found",
-	request:              newRequest("GET", Path, ""),
-	service:              &MockService{model: db.Model{}},
-	expectedResponseCode: 404,
-	expectedContentType:  ContentTypeJson,
-}
-var DELETE_404 = TestCase{
-	description:          "Delete Not Found",
-	request:              newRequest("DELETE", Path, ""),
-	service:              &MockService{deleted: false},
-	expectedResponseCode: 404,
-	expectedContentType:  ContentTypeJson,
-}
-
-var DELETE_204 = TestCase{
-	description:          "204 Deleted",
-	request:              newRequest("DELETE", Path, ""),
-	service:              &MockService{deleted: true},
-	expectedResponseCode: 204,
-}
-
-var PUT_201 = TestCase{
-	description:          "PUT 201 Created",
-	request:              newRequest("PUT", Path, GoodBody),
-	service:              &MockService{created: true},
-	expectedResponseCode: 201,
-}
-
-var PUT_200 = TestCase{
-	description:          "PUT 200 Updated",
-	request:              newRequest("PUT", Path, GoodBody),
-	service:              &MockService{created: false},
-	expectedResponseCode: 200,
-}
-
-var GET_200 = TestCase{
-	description:          "GET 200 OK",
-	request:              newRequest("GET", Path, ""),
-	service:              &MockService{model: db.Model{UUID: TestConceptUuid, ConcordedIds: []string{"1", "2"}}},
-	expectedResponseCode: 200,
-	expectedResponseBody: GoodBody,
-}
-var COUNT_200 = TestCase{
-	description:          "COUNT 200 OK",
-	request:              newRequest("GET", "/concordances/__count", ""),
-	service:              &MockService{count: 0},
-	expectedResponseCode: 200,
-	expectedContentType:  "text/plain",
-	expectedResponseBody: "0",
-}
-
-func TestResponseCodesAndMessages(t *testing.T) {
-	testCases := []TestCase{GET_404, GET_503, GET_200, PUT_503, PUT_201, PUT_200, DELETE_503, DELETE_404, DELETE_204, COUNT_200, COUNT_503}
 	for _, c := range testCases {
-
 		t.Run(c.description,
 			func(t *testing.T) {
 				h.srv = c.service
@@ -164,13 +145,13 @@ func TestResponseCodesAndMessages(t *testing.T) {
 				}
 
 				if c.expectedContentType != "" {
-					assert.Equal(t, c.expectedContentType, rec.HeaderMap["Content-Type"][0], "Incporrect Content-Type Header")
+					assert.Equal(t, c.expectedContentType, rec.HeaderMap["Content-Type"][0], "Incorrect Content-Type Header")
 				}
 			})
 	}
 }
 
-func TestBadPath(t *testing.T) {
+func TestHandler_BadPath(t *testing.T) {
 	invalidPaths := []string{
 		"/concordances/invalidUUID",
 		"/not_concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0",
@@ -181,7 +162,6 @@ func TestBadPath(t *testing.T) {
 		"/",
 	}
 	methods := []string{"GET", "PUT", "DELETE"}
-	expectedErrorMessage := fmt.Sprintf(ErrorMsgJson, ErrorMsg_BadPath)
 
 	for _, p := range invalidPaths {
 		for _, m := range methods {
@@ -189,15 +169,13 @@ func TestBadPath(t *testing.T) {
 				func(t *testing.T) {
 					rec := httptest.NewRecorder()
 					router.ServeHTTP(rec, newRequest(m, p, ""))
-					assert.Equal(t, 400, rec.Result().StatusCode, "Response code incorrect.")
-					assert.Equal(t, expectedErrorMessage, rec.Body.String(), "Response body incorrect.")
-					assert.Equal(t, ContentTypeJson, rec.HeaderMap["Content-Type"][0], "Incporrect Content-Type Header")
+					assert.Equal(t, 404, rec.Result().StatusCode, "Response code incorrect.")
 				})
 		}
 	}
 }
 
-func TestBadBody(t *testing.T) {
+func TestHandler_BadBody(t *testing.T) {
 	mismatchedPathUuid := "{\"conceptId\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", \"concordedIds\": [\"1\"]}"
 	conceptId_missing := "{\"concordedIds\": [\"1\"]}"
 	concordedIds_empty := "{\"conceptId\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", \"concordedIds\": []}"
@@ -205,8 +183,8 @@ func TestBadBody(t *testing.T) {
 	not_array := "{\"conceptId\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", \"concordedIds\": \"not_array\"}"
 	concordedIds_missing := "{\"conceptId\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", }"
 
-	mismatchedPathMsg := "{\"message\":\"Invalid payload. Error: Concept uuid in payload is different from uuid path parameter\"}"
-	badConceptIdsMsg := "{\"message\":\"Invalid payload. Error: Payload has no concorded uuids to store.\"}"
+	mismatchedPathMsg := "{\"message\":\"Invalid payload. Error: Concept UUID in payload is different from UUID path parameter\"}"
+	badConceptIdsMsg := "{\"message\":\"Invalid payload. Error: Payload has no concorded UUIDs to store.\"}"
 	badJsonMsg := "{\"message\":\"Invalid payload. Error: Corrupted JSON\"}"
 
 	invalidPayloads := []struct {
@@ -240,22 +218,21 @@ func TestBadBody(t *testing.T) {
 				rec := httptest.NewRecorder()
 				router.ServeHTTP(rec, c.request)
 				assert.Equal(t, 400, rec.Result().StatusCode, "Response code incorrect.")
-				assert.Equal(t, ContentTypeJson, rec.HeaderMap["Content-Type"][0], "Incporrect Content-Type Header")
+				assert.Equal(t, ContentTypeJson, rec.HeaderMap["Content-Type"][0], "Incorrect Content-Type Header")
 				assert.Equal(t, c.expectedErrMsg, rec.Body.String(), "Response body incorrect.")
 			})
 
 	}
 }
 
-func TestAdminHandlers(t *testing.T) {
+func TestHandler_AdminEndpoints(t *testing.T) {
 	adminHandlers := map[string]string{
-		status.PingPath:      "pong",
 		status.BuildInfoPath: "",
 		status.GTGPath:       "",
 		healthPath:           "",
 	}
 	router := mux.NewRouter()
-	NewConcordanceRwHandler(router, AppConfig{}, &MockService{})
+	NewHandler(router, AppConfig{}, &MockService{})
 
 	for url, expectedBody := range adminHandlers {
 		t.Run(url,

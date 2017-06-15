@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func creatService(ddbClient db.DynamoDbClient, snsClient sns.SnsClient) ConcordancesRwService {
+func createService(ddbClient db.DynamoDBClient, snsClient sns.SNSClient) ConcordancesRwService {
 	return ConcordancesRwService{
 		DynamoDbTable: "TestTable",
 		AwsRegion:     "TestRegion",
@@ -18,9 +18,9 @@ func creatService(ddbClient db.DynamoDbClient, snsClient sns.SnsClient) Concorda
 }
 
 func TestServiceRead_NoError(t *testing.T) {
-	ddbClient := MockDynamoDbClient{Happy: true}
-	snsClient := MockSnsClient{}
-	srv := creatService(&ddbClient, &snsClient)
+	ddbClient := MockDynamoDBClient{Happy: true}
+	snsClient := MockSNSClient{}
+	srv := createService(&ddbClient, &snsClient)
 
 	m, err := srv.Read(EXPECTED_UUID)
 	assert.NoError(t, err, "Failed on service error.")
@@ -29,19 +29,19 @@ func TestServiceRead_NoError(t *testing.T) {
 }
 
 func TestServiceRead_DynamoBbError(t *testing.T) {
-	ddbClient := MockDynamoDbClient{Happy: false}
-	snsClient := MockSnsClient{}
-	srv := creatService(&ddbClient, &snsClient)
+	ddbClient := MockDynamoDBClient{Happy: false}
+	snsClient := MockSNSClient{}
+	srv := createService(&ddbClient, &snsClient)
 	_, err := srv.Read(EXPECTED_UUID)
 	assert.Equal(t, DDB_ERROR, err.Error(), "Failed to return service error.")
 	assert.False(t, snsClient.Invoked, "Should not send sns notifications on read")
 }
 
 func TestServiceCreate_NoError(t *testing.T) {
-	ddbClient := MockDynamoDbClient{Happy: true, model: db.Model{}}
-	snsClient := MockSnsClient{Happy: true}
-	srv := creatService(&ddbClient, &snsClient)
-	updateModel := db.Model{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
+	ddbClient := MockDynamoDBClient{Happy: true, model: db.ConcordancesModel{}}
+	snsClient := MockSNSClient{Happy: true}
+	srv := createService(&ddbClient, &snsClient)
+	updateModel := db.ConcordancesModel{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
 	created, err := srv.Write(updateModel)
 	assert.NoError(t, err, "Failed on service error.")
 	assert.True(t, created, "Did not detect that new record was created.")
@@ -49,10 +49,10 @@ func TestServiceCreate_NoError(t *testing.T) {
 }
 
 func TestServiceUpdate_NoError(t *testing.T) {
-	ddbClient := MockDynamoDbClient{Happy: true, model: oldModel}
-	snsClient := MockSnsClient{Happy: true}
-	srv := creatService(&ddbClient, &snsClient)
-	updateModel := db.Model{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
+	ddbClient := MockDynamoDBClient{Happy: true, model: oldModel}
+	snsClient := MockSNSClient{Happy: true}
+	srv := createService(&ddbClient, &snsClient)
+	updateModel := db.ConcordancesModel{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
 	created, err := srv.Write(updateModel)
 	assert.NoError(t, err, "Failed on service error.")
 	assert.False(t, created, "Did not detect that record was updated.")
@@ -60,10 +60,10 @@ func TestServiceUpdate_NoError(t *testing.T) {
 }
 
 func TestServiceWrite_DynamoDbError(t *testing.T) {
-	ddbClient := MockDynamoDbClient{Happy: false, model: oldModel}
-	snsClient := MockSnsClient{Happy: true}
-	srv := creatService(&ddbClient, &snsClient)
-	updateModel := db.Model{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
+	ddbClient := MockDynamoDBClient{Happy: false, model: oldModel}
+	snsClient := MockSNSClient{Happy: true}
+	srv := createService(&ddbClient, &snsClient)
+	updateModel := db.ConcordancesModel{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
 	created, err := srv.Write(updateModel)
 	assert.Equal(t, DDB_ERROR, err.Error(), "Failed to return service error.")
 	assert.False(t, created, "Did not detect existing record was updated.")
@@ -71,9 +71,9 @@ func TestServiceWrite_DynamoDbError(t *testing.T) {
 }
 
 func TestServiceWrite_SnsError(t *testing.T) {
-	ddbClient := MockDynamoDbClient{Happy: true, model: db.Model{}}
-	snsClient := MockSnsClient{Happy: false}
-	srv := creatService(&ddbClient, &snsClient)
+	ddbClient := MockDynamoDBClient{Happy: true, model: db.ConcordancesModel{}}
+	snsClient := MockSNSClient{Happy: false}
+	srv := createService(&ddbClient, &snsClient)
 
 	_, err := srv.Write(updateModel)
 
@@ -82,27 +82,27 @@ func TestServiceWrite_SnsError(t *testing.T) {
 }
 
 func TestServiceDelete_Deleted(t *testing.T) {
-	ddbClient := MockDynamoDbClient{Happy: true, model: oldModel}
-	snsClient := MockSnsClient{Happy: true}
-	srv := creatService(&ddbClient, &snsClient)
+	ddbClient := MockDynamoDBClient{Happy: true, model: oldModel}
+	snsClient := MockSNSClient{Happy: true}
+	srv := createService(&ddbClient, &snsClient)
 	deleted, err := srv.Delete(EXPECTED_UUID)
 	assert.NoError(t, err, "Successful deletion should not have returned error")
 	assert.True(t, deleted, "Successul deletion should have returned True.")
 }
 
 func TestServiceDelete_NotFound(t *testing.T) {
-	ddbClient := MockDynamoDbClient{Happy: true, model: db.Model{}}
-	snsClient := MockSnsClient{Happy: true}
-	srv := creatService(&ddbClient, &snsClient)
+	ddbClient := MockDynamoDBClient{Happy: true, model: db.ConcordancesModel{}}
+	snsClient := MockSNSClient{Happy: true}
+	srv := createService(&ddbClient, &snsClient)
 	deleted, err := srv.Delete(EXPECTED_UUID)
 	assert.NoError(t, err, "Successful deletion should not have returned error")
 	assert.False(t, deleted, "When no record to delete should have returned False.")
 }
 
 func TestServiceDelete_DynamoDbError(t *testing.T) {
-	ddbClient := MockDynamoDbClient{Happy: false, model: oldModel}
-	snsClient := MockSnsClient{Happy: true}
-	srv := creatService(&ddbClient, &snsClient)
+	ddbClient := MockDynamoDBClient{Happy: false, model: oldModel}
+	snsClient := MockSNSClient{Happy: true}
+	srv := createService(&ddbClient, &snsClient)
 
 	_, err := srv.Delete(EXPECTED_UUID)
 
@@ -111,10 +111,10 @@ func TestServiceDelete_DynamoDbError(t *testing.T) {
 }
 
 func TestServiceDelete_SnsError(t *testing.T) {
-	ddbClient := MockDynamoDbClient{Happy: true, model: oldModel}
-	snsClient := MockSnsClient{Happy: false}
-	srv := creatService(&ddbClient, &snsClient)
-	updateModel := db.Model{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
+	ddbClient := MockDynamoDBClient{Happy: true, model: oldModel}
+	snsClient := MockSNSClient{Happy: false}
+	srv := createService(&ddbClient, &snsClient)
+	updateModel := db.ConcordancesModel{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
 	_, err := srv.Write(updateModel)
 
 	assert.True(t, snsClient.Invoked, "Should have invoked SNS Client when no error from DynamoDB")
@@ -122,9 +122,9 @@ func TestServiceDelete_SnsError(t *testing.T) {
 }
 
 func TestServiceCount(t *testing.T) {
-	ddbClient := MockDynamoDbClient{}
-	snsClient := MockSnsClient{}
-	srv := creatService(&ddbClient, &snsClient)
+	ddbClient := MockDynamoDBClient{}
+	snsClient := MockSNSClient{}
+	srv := createService(&ddbClient, &snsClient)
 	cnt, err := srv.Count()
 	var zero int64 = 0
 	assert.NoError(t, err, "Count not implemented and always returns 0")

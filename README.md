@@ -51,7 +51,6 @@ export AWS_ACCESS_KEY_ID=any_access_id
 `go test ./dynamodb/`
 
 ## Build and deployment
-_How can I build and deploy it (lots of this will be links out as the steps will be common)_
 
 * Built by Docker Hub on merge to master: [coco/concordances-rw-dynamodb](https://hub.docker.com/r/coco/concordances-rw-dynamodb/)
 * CI provided by CircleCI: [concordances-rw-dynamodb](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb)

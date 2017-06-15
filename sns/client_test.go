@@ -27,14 +27,14 @@ func (c AssertPublishInput) Publish(in *sns.PublishInput) (*sns.PublishOutput, e
 
 func TestMessageFormattedCorrectly(t *testing.T) {
 	mockSnsService := AssertPublishInput{}
-	client := SnsClientImpl{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
+	client := SNSClientImpl{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
 	actualMessage := client.message(UUID)
 	assert.Equal(t, ExpectedMessage, *actualMessage, "Expected and Actual messages did not match.")
 }
 
 func TestPublishInputHasData(t *testing.T) {
 	mockSnsService := AssertPublishInput{tT: t}
-	client := SnsClientImpl{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
+	client := SNSClientImpl{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
 	err := client.SendMessage(UUID)
 	assert.NoError(t, err, "Received error")
 }

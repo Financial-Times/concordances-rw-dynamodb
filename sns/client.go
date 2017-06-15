@@ -15,30 +15,30 @@ const (
 	SNS_MSG = (`{"Records":[{"s3":{"object":{"key":"%s"}}}]}`)
 )
 
-type SnsClient interface {
+type SNSClient interface {
 	SendMessage(uuid string) error
 }
 
-type SnsClientImpl struct {
+type SNSClientImpl struct {
 	client    snsiface.SNSAPI
 	topicArn  string
 	awsRegion string
 }
 
-func NewSnsClient(topic string, region string) *SnsClientImpl {
+func NewSNSClient(topic string, region string) *SNSClientImpl {
 	sess := session.Must(session.NewSession(&aws.Config{Region: aws.String(region)}))
 	svc := sns.New(sess)
-	snsClient := SnsClientImpl{client: svc, topicArn: topic, awsRegion: region}
+	snsClient := SNSClientImpl{client: svc, topicArn: topic, awsRegion: region}
 	return &snsClient
 }
 
-func (c *SnsClientImpl) message(uuid string) *string {
+func (c *SNSClientImpl) message(uuid string) *string {
 	n := strings.Replace(uuid, "-", "/", -1)
 	m := fmt.Sprintf(SNS_MSG, n)
 	return aws.String(m)
 }
 
-func (c *SnsClientImpl) SendMessage(uuid string) (err error) {
+func (c *SNSClientImpl) SendMessage(uuid string) (err error) {
 
 	params := &sns.PublishInput{
 		Message:  c.message(uuid),

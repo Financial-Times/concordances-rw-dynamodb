@@ -38,7 +38,7 @@ func (service *healthService) gtgCheck() gtg.Status {
 }
 
 func (service *healthService) dynamoDbChecker() (string, error) {
-	dbClient := service.config.srv.getDbClient()
+	dbClient := service.config.srv.getDBClient()
 	_, err := dbClient.Read("healthcheck")
 	if err != nil {
 		return "Cannot connect to DynamoDB Table", err
@@ -57,15 +57,15 @@ func (service *healthService) dynamoDbCheck() health.Check {
 		TechnicalSummary: "DynamoDB healthcheck checks if the service can connect to DynamoDB, and access the table. " +
 			"The failure of this healthcheck may be due to " +
 			"1) incorrect name or region of DynamoDB; " +
-			"2) incorrect aws security credentials; " +
+			"2) incorrect AWS security credentials; " +
 			"3) missing permissions to the DynamoDB table; " +
-			"4) the table may not exists;",
+			"4) the table may not exist;",
 		Checker: service.dynamoDbChecker,
 	}
 }
 
 func (service *healthService) snsChecker() (string, error) {
-	snsClient := service.config.srv.getSnsClient()
+	snsClient := service.config.srv.getSNSClient()
 	err := snsClient.SendMessage("healthcheck")
 
 	if err != nil {
@@ -83,7 +83,7 @@ func (service *healthService) snsCheck() health.Check {
 		TechnicalSummary: "SNS healthcheck checks if the service can send concordances notifications to an SNS topic." +
 			" The failure of this healthcheck may be due to" +
 			" 1) incorrect region of SNS Topic;" +
-			" 2) incorrect aws security credentials;" +
+			" 2) incorrect AWS security credentials;" +
 			" 3) missing permissions For SNS Topic;" +
 			" 4) Topic does not exist;",
 		Checker: service.snsChecker,
