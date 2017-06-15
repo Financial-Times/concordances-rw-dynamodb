@@ -18,15 +18,15 @@ type Service interface {
 	Read(uuid string) (db.ConcordancesModel, error)
 	Write(m db.ConcordancesModel) (created bool, err error)
 	Delete(uuid string) (bool, error)
-	getDBClient() db.DynamoDBClient
-	getSNSClient() sns.SNSClient
+	getDBClient() db.Client
+	getSNSClient() sns.Client
 }
 
 type ConcordancesRwService struct {
 	DynamoDbTable string
 	AwsRegion     string
-	ddb           db.DynamoDBClient
-	sns           sns.SNSClient
+	ddb           db.Client
+	sns           sns.Client
 }
 
 func NewConcordancesRwService(conf AppConfig) Service {
@@ -64,9 +64,9 @@ func (s *ConcordancesRwService) Delete(uuid string) (bool, error) {
 	return true, err
 }
 
-func (s *ConcordancesRwService) getDBClient() db.DynamoDBClient {
+func (s *ConcordancesRwService) getDBClient() db.Client {
 	return s.ddb
 }
-func (s *ConcordancesRwService) getSNSClient() sns.SNSClient {
+func (s *ConcordancesRwService) getSNSClient() sns.Client {
 	return s.sns
 }

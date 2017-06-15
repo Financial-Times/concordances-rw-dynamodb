@@ -25,18 +25,18 @@ var goodModel = ConcordancesModel{
 }
 
 var db *dynamodb.DynamoDB
-var c DynamoDBClientImpl
+var c DynamoDBClient
 
 var DescribeTableParams = &dynamodb.DescribeTableInput{TableName: aws.String(DDB_TABLE)}
 
 func init() {
 	fmt.Println("Create DynamoDb \n")
 	db = setupDynamoDBLocal()
-	c = DynamoDBClientImpl{dynamoDbTable: DDB_TABLE, awsRegion: AWS_REGION, ddb: db}
+	c = DynamoDBClient{dynamoDbTable: DDB_TABLE, awsRegion: AWS_REGION, ddb: db}
 }
 func setupTestCase(t *testing.T) func(t *testing.T) {
 	t.Log("Create table \n")
-	c = DynamoDBClientImpl{dynamoDbTable: DDB_TABLE, awsRegion: AWS_REGION, ddb: db}
+	c = DynamoDBClient{dynamoDbTable: DDB_TABLE, awsRegion: AWS_REGION, ddb: db}
 	createTableIfNotExists(t)
 
 	return func(t *testing.T) {

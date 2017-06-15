@@ -97,14 +97,14 @@ func (mock *MockService) Delete(uuid string) (bool, error) {
 	return mock.deleted, mock.err
 }
 
-func (mock *MockService) getDBClient() db.DynamoDBClient {
+func (mock *MockService) getDBClient() db.Client {
 	if mock.err != nil {
 		return &MockDynamoDBClient{Happy: false}
 	}
 	return &MockDynamoDBClient{Happy: true}
 }
 
-func (mock *MockService) getSNSClient() sns.SNSClient {
+func (mock *MockService) getSNSClient() sns.Client {
 	if mock.err != nil {
 		return &MockSNSClient{Happy: false}
 	}

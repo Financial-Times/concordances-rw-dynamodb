@@ -15,31 +15,31 @@ const (
 	SNS_MSG = (`{"Records":[{"s3":{"object":{"key":"%s"}}}]}`)
 )
 
-type SNSClient interface {
+type Client interface {
 	SendMessage(uuid string) error
 	Healthcheck() (bool, error)
 }
 
-type SNSClientImpl struct {
+type SNSClient struct {
 	client    snsiface.SNSAPI
 	topicArn  string
 	awsRegion string
 }
 
-func NewSNSClient(topic string, region string) *SNSClientImpl {
+func NewSNSClient(topic string, region string) *SNSClient {
 	sess := session.Must(session.NewSession(&aws.Config{Region: aws.String(region)}))
 	svc := sns.New(sess)
-	snsClient := SNSClientImpl{client: svc, topicArn: topic, awsRegion: region}
+	snsClient := SNSClient{client: svc, topicArn: topic, awsRegion: region}
 	return &snsClient
 }
 
-func (c *SNSClientImpl) message(uuid string) *string {
+func (c *SNSClient) message(uuid string) *string {
 	n := strings.Replace(uuid, "-", "/", -1)
 	m := fmt.Sprintf(SNS_MSG, n)
 	return aws.String(m)
 }
 
-func (c *SNSClientImpl) SendMessage(uuid string) (err error) {
+func (c *SNSClient) SendMessage(uuid string) (err error) {
 
 	params := &sns.PublishInput{
 		Message:  c.message(uuid),
@@ -53,7 +53,7 @@ func (c *SNSClientImpl) SendMessage(uuid string) (err error) {
 	return err
 }
 
-func (c *SNSClientImpl) Healthcheck() (bool, error) {
+func (c *SNSClient) Healthcheck() (bool, error) {
 	params := &sns.GetTopicAttributesInput {TopicArn: aws.String(c.topicArn)}
 	output, err := c.client.GetTopicAttributes(params)
 	var attributes map[string]*string = output.Attributes

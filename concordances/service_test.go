@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func createService(ddbClient db.DynamoDBClient, snsClient sns.SNSClient) ConcordancesRwService {
+func createService(ddbClient db.Client, snsClient sns.Client) ConcordancesRwService {
 	return ConcordancesRwService{
 		DynamoDbTable: "TestTable",
 		AwsRegion:     "TestRegion",
