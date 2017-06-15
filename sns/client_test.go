@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"errors"
 )
 
 const (
@@ -17,12 +18,26 @@ const (
 type AssertPublishInput struct {
 	snsiface.SNSAPI
 	tT *testing.T
+	happy bool
 }
 
 func (c AssertPublishInput) Publish(in *sns.PublishInput) (*sns.PublishOutput, error) {
 	assert.Equal(c.tT, *in.Message, ExpectedMessage, "Did not pass message body to PublishInput to sent to SNS")
 	assert.Equal(c.tT, *in.TopicArn, TOPIC, "Did not pass topic name to PublishInput to sent to SNS")
 	return nil, nil
+}
+
+func (c AssertPublishInput) GetTopicAttributes(input *sns.GetTopicAttributesInput) (*sns.GetTopicAttributesOutput, error) {
+
+	output := sns.GetTopicAttributesOutput{}
+
+	if c.happy {
+		var topicARN string =  "topicARN"
+		attributes := map[string]*string{"TopicArn":&topicARN}
+		output.SetAttributes(attributes)
+		return &output, nil
+	}
+	return  &output, errors.New("SNS is unhappy.")
 }
 
 func TestMessageFormattedCorrectly(t *testing.T) {
@@ -37,4 +52,20 @@ func TestPublishInputHasData(t *testing.T) {
 	client := SNSClientImpl{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
 	err := client.SendMessage(UUID)
 	assert.NoError(t, err, "Received error")
+}
+
+func TestSNSClient_HealthcheckHappy(t *testing.T) {
+	mockSnsService := AssertPublishInput{tT: t, happy: true}
+	client := SNSClientImpl{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
+	happy, err := client.Healthcheck()
+	assert.NoError(t, err, "Received error.")
+	assert.True(t, happy, "SNS is not happy.")
+}
+
+func TestSNSClient_HealthcheckUnhappy(t *testing.T) {
+	mockSnsService := AssertPublishInput{tT: t, happy: false}
+	client := SNSClientImpl{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
+	happy, err := client.Healthcheck()
+	assert.NotEmpty(t, err.Error())
+	assert.False(t, happy)
 }

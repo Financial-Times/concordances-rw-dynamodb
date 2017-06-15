@@ -30,6 +30,14 @@ func (c *MockSNSClient) SendMessage(uuid string) error {
 	return errors.New(SNS_ERROR)
 }
 
+func (c *MockSNSClient) Healthcheck() (bool, error) {
+	c.Invoked = true
+	if c.Happy {
+		return true, nil
+	}
+	return false, errors.New(SNS_ERROR)
+}
+
 type MockDynamoDBClient struct {
 	Happy bool
 	model db.ConcordancesModel

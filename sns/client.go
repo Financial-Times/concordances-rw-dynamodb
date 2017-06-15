@@ -17,6 +17,7 @@ const (
 
 type SNSClient interface {
 	SendMessage(uuid string) error
+	Healthcheck() (bool, error)
 }
 
 type SNSClientImpl struct {
@@ -50,4 +51,14 @@ func (c *SNSClientImpl) SendMessage(uuid string) (err error) {
 		log.Infof("Concordance Notification for concept uuid [%s] was posted to topic[%s]. SNS response: %s", uuid, c.topicArn, resp.String())
 	}
 	return err
+}
+
+func (c *SNSClientImpl) Healthcheck() (bool, error) {
+	params := &sns.GetTopicAttributesInput {TopicArn: aws.String(c.topicArn)}
+	output, err := c.client.GetTopicAttributes(params)
+	var attributes map[string]*string = output.Attributes
+	if len(attributes) > 0 {
+		return true, nil
+	}
+	return false, err
 }

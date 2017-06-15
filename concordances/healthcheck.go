@@ -66,7 +66,7 @@ func (service *healthService) dynamoDbCheck() health.Check {
 
 func (service *healthService) snsChecker() (string, error) {
 	snsClient := service.config.srv.getSNSClient()
-	err := snsClient.SendMessage("healthcheck")
+	_,err := snsClient.Healthcheck()
 
 	if err != nil {
 		return "Cannot send notifications to SNS topic", err
