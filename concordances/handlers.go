@@ -78,13 +78,13 @@ func (h *Handler) HandleGet(rw http.ResponseWriter, r *http.Request) {
 	//503
 	if err != nil {
 		logMsg := fmt.Sprintf(LogMsg503, "retrieving")
-		log.Errorf("%s %s", logMsg, err.Error())
+		log.WithFields(log.Fields{"UUID": uuid}).Errorf("%s %s", logMsg, err.Error())
 		writeJSONError(rw, logMsg, http.StatusServiceUnavailable)
 		return
 	}
 	//404
 	if model.ConcordedIds == nil {
-		log.Infof("%s for %s", LogMsg404, uuid)
+		log.WithFields(log.Fields{"UUID": uuid}).Infof("%s for %s", LogMsg404, uuid)
 		writeJSONError(rw, LogMsg404, http.StatusNotFound)
 		return
 	}
@@ -102,7 +102,7 @@ func (h *Handler) HandlePut(rw http.ResponseWriter, r *http.Request) {
 	uuid := vars[UUID_Param]
 	if r.ContentLength <= 0 {
 		logMsg := fmt.Sprintf("%s Error: %s", ErrorMsg_BadBody, ErrorMsg_BadJson)
-		log.Infof(logMsg)
+		log.WithFields(log.Fields{"UUID": uuid}).Infof(logMsg)
 		writeJSONError(rw, logMsg, http.StatusBadRequest)
 		return
 	}
@@ -113,7 +113,7 @@ func (h *Handler) HandlePut(rw http.ResponseWriter, r *http.Request) {
 	//400
 	if err != nil {
 		logMsg := fmt.Sprintf("%s Error: %s", ErrorMsg_BadBody, ErrorMsg_BadJson)
-		log.Infof(logMsg)
+		log.WithFields(log.Fields{"UUID": uuid}).Infof(logMsg)
 		writeJSONError(rw, logMsg, http.StatusBadRequest)
 		return
 	}
@@ -122,7 +122,7 @@ func (h *Handler) HandlePut(rw http.ResponseWriter, r *http.Request) {
 	//400
 	if err != nil {
 		logMsg := fmt.Sprintf("%s Error: %s", ErrorMsg_BadBody, err.Error())
-		log.Infof(logMsg)
+		log.WithFields(log.Fields{"UUID": uuid}).Infof(logMsg)
 		writeJSONError(rw, logMsg, http.StatusBadRequest)
 		return
 	}
@@ -132,7 +132,7 @@ func (h *Handler) HandlePut(rw http.ResponseWriter, r *http.Request) {
 	//503
 	if err != nil {
 		logMsg := fmt.Sprintf(LogMsg503, "storing")
-		log.Errorf("%s %s", logMsg, err.Error())
+		log.WithFields(log.Fields{"UUID": uuid}).Errorf("%s %s", logMsg, err.Error())
 		writeJSONError(rw, logMsg, http.StatusServiceUnavailable)
 		return
 	}
@@ -152,13 +152,13 @@ func (h *Handler) HandleDelete(rw http.ResponseWriter, r *http.Request) {
 	//503
 	if err != nil {
 		logMsg := fmt.Sprintf(LogMsg503, "deleting")
-		log.Errorf("%s %s", logMsg, err.Error())
+		log.WithFields(log.Fields{"UUID": uuid}).Errorf("%s %s", logMsg, err.Error())
 		writeJSONError(rw, logMsg, http.StatusServiceUnavailable)
 		return
 	}
 	//404
 	if !deleted {
-		log.Infof("%s for %s", LogMsg404, uuid)
+		log.WithFields(log.Fields{"UUID": uuid}).Infof("%s for %s", LogMsg404, uuid)
 		writeJSONError(rw, LogMsg404, http.StatusNotFound)
 		return
 	}

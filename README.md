@@ -36,6 +36,7 @@ Options:
         --awsRegion="eu-west-1"                                 AWS region of DynamoDB
         --dynamoDbTableName="upp-concordance-store-[env]"       Name of DynamoDB Table
         --snsTopicArn="arn:aws:sns:eu-west-1:..."               SNS Topic to notify about concordances events
+        --logLeve="info"                                        Level of logging to be shown
        
 Note that at this time DynamoDB and SNS topic are in the same AWS Region.  
 

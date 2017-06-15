@@ -52,13 +52,33 @@ func main() {
 		Desc:   "SNS Topic to notify about concordances events",
 		EnvVar: "SNS_TOPIC_NAME",
 	})
+	logLevel := app.String(cli.StringOpt{
+		Name:   "logLevel",
+		Value:  "info",
+		Desc:   "Level of logging to be shown",
+		EnvVar: "LOG_LEVEL",
+	})
 
-	log.SetLevel(log.InfoLevel)
-	log.Infof("[Startup] concordances-rw-dynamodb is starting ")
+	lvl, err := log.ParseLevel(*logLevel)
+	if err != nil {
+		log.Warnf("Log level %s could not be parsed, defaulting to info")
+		lvl = log.InfoLevel
+	}
+	log.SetLevel(lvl)
+	log.SetFormatter(&log.JSONFormatter{})
+
+	log.Infof("[Startup] %s is starting", *appSystemCode)
 
 	app.Action = func() {
-		log.Infof("System code: %s, App Name: %s, Port: %s, DynamoDb Table: %s, AWS Region: %s, SNS Topic: %s",
-			*appSystemCode, *appName, *port, *dynamoDbTableName, *awsRegion, *snsTopicArn)
+		log.WithFields(log.Fields{
+			"System code": 	*appSystemCode,
+			"App Name": *appName,
+			"Port": *port,
+			"DynamoDb Table": *dynamoDbTableName,
+			"AWS Region": *awsRegion,
+			"SNS Topic": *snsTopicArn,
+
+		}).Infof("Logging set to %s level", *logLevel)
 
 		conf := concordances.AppConfig{
 			AWSRegion:         *awsRegion,
@@ -79,7 +99,7 @@ func main() {
 		}
 
 	}
-	err := app.Run(os.Args)
+	err = app.Run(os.Args)
 	if err != nil {
 		log.Errorf("App could not start, error=[%s]\n", err)
 		return
