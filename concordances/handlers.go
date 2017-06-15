@@ -13,7 +13,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
 	"net/http"
-	"strconv"
 )
 
 const (
@@ -49,11 +48,7 @@ func (h *Handler) registerAPIHandlers(router *mux.Router) {
 		"PUT":    http.HandlerFunc(h.HandlePut),
 		"DELETE": http.HandlerFunc(h.HandleDelete),
 	}
-	countHandler := handlers.MethodHandler{
-		"GET": http.HandlerFunc(h.HandleCount),
-	}
 
-	router.Handle("/concordances/__count", countHandler)
 	router.Handle("/concordances/{uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", rwHandler)
 }
 
@@ -164,23 +159,6 @@ func (h *Handler) HandleDelete(rw http.ResponseWriter, r *http.Request) {
 	}
 	//204
 	rw.WriteHeader(http.StatusNoContent)
-}
-
-func (h *Handler) HandleCount(rw http.ResponseWriter, r *http.Request) {
-	count, err := h.srv.Count()
-	//503
-	if err != nil {
-		logMsg := fmt.Sprintf(LogMsg503, "counting")
-		log.Errorf("%s %s", logMsg, err.Error())
-		writeJSONError(rw, logMsg, http.StatusServiceUnavailable)
-		return
-	}
-	//200
-	rw.Header().Set("Content-Type", "text/plain")
-	rw.WriteHeader(http.StatusOK)
-	b := []byte{}
-	b = strconv.AppendInt(b, count, 10)
-	rw.Write(b)
 }
 
 func writeJSONError(rw http.ResponseWriter, logMsg string, statusCode int) {

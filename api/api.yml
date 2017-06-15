@@ -105,22 +105,6 @@ paths:
         503:
           description: Service Unavailable if it cannot connect to the cache storage.
 
-  /concordances/__count:
-    get:
-      summary: Concordances records count.
-      description: Gets the total count of stored concordances records.
-      produces:
-        - text/plain
-      tags:
-        - Internal API
-      responses:
-        200:
-          description: Responds with an integer as plain/text format.
-        500:
-          description: Internal error retrieving the count of concordances from the cache.
-        503:
-          description: Service Unavailable if it cannot connect to the cache storage.
-
   /__ping:
     get:
       summary: Ping

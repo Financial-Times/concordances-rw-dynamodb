@@ -120,13 +120,3 @@ func TestServiceDelete_SnsError(t *testing.T) {
 	assert.True(t, snsClient.Invoked, "Should have invoked SNS Client when no error from DynamoDB")
 	assert.Equal(t, SNS_ERROR, err.Error(), "Did not return SNS error.")
 }
-
-func TestServiceCount(t *testing.T) {
-	ddbClient := MockDynamoDBClient{}
-	snsClient := MockSNSClient{}
-	srv := createService(&ddbClient, &snsClient)
-	cnt, err := srv.Count()
-	var zero int64 = 0
-	assert.NoError(t, err, "Count not implemented and always returns 0")
-	assert.Equal(t, zero, cnt, "Count not implemented and always returns 0")
-}

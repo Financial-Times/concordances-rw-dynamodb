@@ -21,7 +21,6 @@ type DynamoDBClient interface {
 	Read(uuid string) (ConcordancesModel, error)
 	Write(m ConcordancesModel) (ConcordancesModel, error)
 	Delete(uuid string) (ConcordancesModel, error)
-	Count() (int64, error)
 }
 
 type DynamoDBClientImpl struct {
@@ -97,10 +96,4 @@ func (s *DynamoDBClientImpl) Delete(uuid string) (model ConcordancesModel, err e
 	output, err := s.ddb.DeleteItem(input)
 	dynamodbattribute.UnmarshalMap(output.Attributes, &model)
 	return model, err
-}
-
-func (s *DynamoDBClientImpl) Count() (int64, error) {
-
-	//err := errors.New("Not Implemented")
-	return 0, nil
 }

@@ -96,9 +96,6 @@ func (mock *MockService) Write(m db.ConcordancesModel) (bool, error) {
 func (mock *MockService) Delete(uuid string) (bool, error) {
 	return mock.deleted, mock.err
 }
-func (mock *MockService) Count() (int64, error) {
-	return mock.count, mock.err
-}
 
 func (mock *MockService) getDBClient() db.DynamoDBClient {
 	if mock.err != nil {

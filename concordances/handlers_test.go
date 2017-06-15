@@ -77,13 +77,6 @@ func TestHandler_ResponseCodesAndMessages(t *testing.T) {
 			expectedContentType:  ContentTypeJson,
 			errorOp:              "deleting",
 		},
-		{description: "COUNT 503 Service Not Available",
-			request:              newRequest("GET", "/concordances/__count", ""),
-			service:              &MockService{err: errors.New("")},
-			expectedResponseCode: 503,
-			expectedContentType:  ContentTypeJson,
-			errorOp:              "counting",
-		},
 		{
 			description:          "GET 404 Not Found",
 			request:              newRequest("GET", Path, ""),
