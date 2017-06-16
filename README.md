@@ -1,5 +1,5 @@
 # concordances-rw-dynamodb
-[![Circle CI](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb/tree/master.png?style=shield)](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb/tree/master)[![Go Report Card](https://goreportcard.com/badge/github.com/Financial-Times/concordances-rw-dynamodb)](https://goreportcard.com/report/github.com/Financial-Times/concordances-rw-dynamodb) [![Coverage Status](https://coveralls.io/repos/github/Financial-Times/concordances-rw-dynamodb/badge.svg)](https://coveralls.io/github/Financial-Times/concordances-rw-dynamodb)
+[![Circle CI](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb.svg?style=shield)](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb)[![Go Report Card](https://goreportcard.com/badge/github.com/Financial-Times/concordances-rw-dynamodb)](https://goreportcard.com/report/github.com/Financial-Times/concordances-rw-dynamodb) [![Coverage Status](https://coveralls.io/repos/github/Financial-Times/concordances-rw-dynamodb/badge.svg)](https://coveralls.io/github/Financial-Times/concordances-rw-dynamodb)
 
 ## Introduction
 
@@ -26,20 +26,36 @@ Download the source code, dependencies and test dependencies:
 
 2. Run the binary (using the `help` flag to see the available optional arguments):
 
-        $GOPATH/bin/concordances-rw-dynamodb [--help]
+        $GOPATH/bin/concordances-rw-dynamodb [--help]  
 
 Options:
 
         --app-system-code="concordances-rw-dynamodb"            System Code of the application ($APP_SYSTEM_CODE)
         --app-name="Concordances RW DynamoDB"                   Application name ($APP_NAME)
         --port="8080"                                           Port to listen on ($APP_PORT)
-        
+        --awsRegion="eu-west-1"                                 AWS region of DynamoDB
+        --dynamoDbTableName="upp-concordance-store-[env]"       Name of DynamoDB Table
+        --snsTopicArn="arn:aws:sns:eu-west-1:..."               SNS Topic to notify about concordances events
+        --logLeve="info"                                        Level of logging to be shown
+       
+Note that at this time DynamoDB and SNS topic are in the same AWS Region.  
+
+### Test locally
+Tests in dynamodb package rely on running instance of DynamoDB installed locally.  
+Install Local DynamoDB following [instructions here](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html)  
+Start DynamoDB  
+`java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb -inMemory`
+```
+export AWS_SECRET_ACCESS_KEY=any_secret_key
+export AWS_ACCESS_KEY_ID=any_access_id
+```
+`go test ./dynamodb/`
 
 ## Build and deployment
-_How can I build and deploy it (lots of this will be links out as the steps will be common)_
 
 * Built by Docker Hub on merge to master: [coco/concordances-rw-dynamodb](https://hub.docker.com/r/coco/concordances-rw-dynamodb/)
 * CI provided by CircleCI: [concordances-rw-dynamodb](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb)
+* Code Coverage provided by coveralls.io [concordances-rw-dynamodb](https://coveralls.io/github/Financial-Times/concordances-rw-dynamodb)
 
 ## API 
 * Based on the following [google doc](https://docs.google.com/document/d/1SFm7NwULX0nGqzfoX5JQGWZcd918YBwEGuO10kULovQ/edit?ts=591d86df#)   
@@ -113,7 +129,8 @@ _request:_
 
 There are several checks performed:  
  
-* Checks that DynamoDB table is accessible, using parameters supplied on service startup.  
+* Checks that DynamoDB table is accessible, using parameters supplied on service startup. 
+ * Checks that SNS topic is accessible, using parameters supplied on service startup. 
 
 See the api/api.yml for the swagger definitions of these endpoints  
 
@@ -123,3 +140,4 @@ See the api/api.yml for the swagger definitions of these endpoints
 * Logging requires an `env` app parameter, for all environments other than `local` logs are written to file.
 * When running locally, logs are written to console. If you want to log locally to file, you need to pass in an env parameter that is != `local`.
 * NOTE: `/__build-info` and `/__gtg` endpoints are not logged as they are called every second from varnish/vulcand and this information is not needed in logs/splunk.
+

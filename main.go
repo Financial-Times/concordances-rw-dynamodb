@@ -1,14 +1,12 @@
 package main
 
 import (
-	health "github.com/Financial-Times/go-fthealth/v1_1"
-	status "github.com/Financial-Times/service-status-go/httphandlers"
+	"github.com/Financial-Times/concordances-rw-dynamodb/concordances"
 	log "github.com/Sirupsen/logrus"
+	"github.com/gorilla/mux"
 	"github.com/jawher/mow.cli"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 )
 
 const appDescription = "Reads / Writes concorded concepts to DynamoDB"
@@ -36,45 +34,74 @@ func main() {
 		Desc:   "Port to listen on",
 		EnvVar: "APP_PORT",
 	})
+	awsRegion := app.String(cli.StringOpt{
+		Name:   "awsRegion",
+		Value:  "eu-west-1",
+		Desc:   "AWS region of DynamoDB",
+		EnvVar: "AWS_REGION",
+	})
+	dynamoDbTableName := app.String(cli.StringOpt{
+		Name:   "dynamoDbTableName",
+		Value:  "upp-concordance-store-test",
+		Desc:   "Name of DynamoDB Table",
+		EnvVar: "DYNAMODB_TABLE_NAME",
+	})
+	snsTopicArn := app.String(cli.StringOpt{
+		Name:   "snsTopicArn",
+		Value:  "arn:aws:sns:eu-west-1:027104099916:upp-concordance-semantic-SNSTopic-SCOTT1234",
+		Desc:   "SNS Topic to notify about concordances events",
+		EnvVar: "SNS_TOPIC_NAME",
+	})
+	logLevel := app.String(cli.StringOpt{
+		Name:   "logLevel",
+		Value:  "info",
+		Desc:   "Level of logging to be shown",
+		EnvVar: "LOG_LEVEL",
+	})
 
-	log.SetLevel(log.InfoLevel)
-	log.Infof("[Startup] concordances-rw-dynamodb is starting ")
+	lvl, err := log.ParseLevel(*logLevel)
+	if err != nil {
+		log.Warnf("Log level %s could not be parsed, defaulting to info")
+		lvl = log.InfoLevel
+	}
+	log.SetLevel(lvl)
+	log.SetFormatter(&log.JSONFormatter{})
+
+	log.Infof("[Startup] %s is starting", *appSystemCode)
 
 	app.Action = func() {
-		log.Infof("System code: %s, App Name: %s, Port: %s", *appSystemCode, *appName, *port)
+		log.WithFields(log.Fields{
+			"System code": 	*appSystemCode,
+			"App Name": *appName,
+			"Port": *port,
+			"DynamoDb Table": *dynamoDbTableName,
+			"AWS Region": *awsRegion,
+			"SNS Topic": *snsTopicArn,
 
-		go func() {
-			serveAdminEndpoints(*appSystemCode, *appName, *port)
-		}()
+		}).Infof("Logging set to %s level", *logLevel)
 
-		// todo: insert app code here
+		conf := concordances.AppConfig{
+			AWSRegion:         *awsRegion,
+			DynamoDbTableName: *dynamoDbTableName,
+			SNSTopic:          *snsTopicArn,
+			AppSystemCode:     *appSystemCode,
+			AppName:           *appName,
+			Port:              *port,
+		}
 
-		waitForSignal()
+		router := mux.NewRouter()
+		srv := concordances.NewConcordancesRwService(conf)
+		concordances.NewHandler(router, conf, srv)
+
+		log.Infof("Listening on %v", *port)
+		if err := http.ListenAndServe(":"+*port, router); err != nil {
+			log.Fatalf("Unable to start server: %v", err)
+		}
+
 	}
-	err := app.Run(os.Args)
+	err = app.Run(os.Args)
 	if err != nil {
 		log.Errorf("App could not start, error=[%s]\n", err)
 		return
 	}
-}
-
-func serveAdminEndpoints(appSystemCode string, appName string, port string) {
-	healthService := newHealthService(&healthConfig{appSystemCode: appSystemCode, appName: appName, port: port})
-
-	serveMux := http.NewServeMux()
-
-	hc := health.HealthCheck{SystemCode: appSystemCode, Name: appName, Description: appDescription, Checks: healthService.checks}
-	serveMux.HandleFunc(healthPath, health.Handler(hc))
-	serveMux.HandleFunc(status.GTGPath, status.NewGoodToGoHandler(healthService.gtgCheck))
-	serveMux.HandleFunc(status.BuildInfoPath, status.BuildInfoHandler)
-
-	if err := http.ListenAndServe(":"+port, serveMux); err != nil {
-		log.Fatalf("Unable to start: %v", err)
-	}
-}
-
-func waitForSignal() {
-	ch := make(chan os.Signal)
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	<-ch
 }
