@@ -1,7 +1,6 @@
 package dynamodb
 
 import (
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -10,6 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
+	"log"
+	"fmt"
 )
 
 const (
@@ -25,18 +26,18 @@ var goodModel = ConcordancesModel{
 }
 
 var db *dynamodb.DynamoDB
-var c DynamoDBClient
+var c Client
 
 var DescribeTableParams = &dynamodb.DescribeTableInput{TableName: aws.String(DDB_TABLE)}
 
 func init() {
-	fmt.Println("Create DynamoDb \n")
+	log.Println("Create DynamoDb")
 	db = setupDynamoDBLocal()
-	c = DynamoDBClient{dynamoDbTable: DDB_TABLE, awsRegion: AWS_REGION, ddb: db}
+	c = Client{dynamoDbTable: DDB_TABLE, awsRegion: AWS_REGION, ddb: db}
 }
 func setupTestCase(t *testing.T) func(t *testing.T) {
 	t.Log("Create table \n")
-	c = DynamoDBClient{dynamoDbTable: DDB_TABLE, awsRegion: AWS_REGION, ddb: db}
+	c = Client{dynamoDbTable: DDB_TABLE, awsRegion: AWS_REGION, ddb: db}
 	createTableIfNotExists(t)
 
 	return func(t *testing.T) {

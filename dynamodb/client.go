@@ -5,7 +5,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 )
 
 const (
@@ -17,26 +16,26 @@ type ConcordancesModel struct {
 	ConcordedIds []string `json:"concordedIds"`
 }
 
-type Client interface {
+type Clienter interface {
 	Read(uuid string) (ConcordancesModel, error)
 	Write(m ConcordancesModel) (ConcordancesModel, error)
 	Delete(uuid string) (ConcordancesModel, error)
 }
 
-type DynamoDBClient struct {
+type Client struct {
 	dynamoDbTable string
 	awsRegion     string
-	ddb           dynamodbiface.DynamoDBAPI
+	ddb           *dynamodb.DynamoDB
 }
 
-func NewDynamoDBClient(dynamoDbTable string, awsRegion string) Client {
+func NewDynamoDBClient(dynamoDbTable string, awsRegion string) Clienter {
 	sess := session.Must(session.NewSession(&aws.Config{Region: aws.String(awsRegion)}))
 	ddb := dynamodb.New(sess)
-	c := DynamoDBClient{dynamoDbTable: dynamoDbTable, awsRegion: awsRegion, ddb: ddb}
+	c := Client{dynamoDbTable: dynamoDbTable, awsRegion: awsRegion, ddb: ddb}
 	return &c
 }
 
-func (s *DynamoDBClient) Read(uuid string) (ConcordancesModel, error) {
+func (s *Client) Read(uuid string) (ConcordancesModel, error) {
 	m := ConcordancesModel{}
 	input := &dynamodb.GetItemInput{}
 	input.SetTableName(s.dynamoDbTable)
@@ -50,11 +49,13 @@ func (s *DynamoDBClient) Read(uuid string) (ConcordancesModel, error) {
 	if err != nil {
 		return m, err
 	}
-	err = dynamodbattribute.UnmarshalMap(output.Item, &m)
+	if output.Item != nil {
+		err = dynamodbattribute.UnmarshalMap(output.Item, &m)
+	}
 	return m, err
 }
 
-func (s *DynamoDBClient) Write(m ConcordancesModel) (model ConcordancesModel, err error) {
+func (s *Client) Write(m ConcordancesModel) (model ConcordancesModel, err error) {
 	input, err := s.getUpdateInput(m)
 	model = ConcordancesModel{}
 	output, err := s.ddb.UpdateItem(input)
@@ -64,7 +65,7 @@ func (s *DynamoDBClient) Write(m ConcordancesModel) (model ConcordancesModel, er
 	dynamodbattribute.UnmarshalMap(output.Attributes, &model)
 	return model, err
 }
-func (s *DynamoDBClient) getUpdateInput(m ConcordancesModel) (*dynamodb.UpdateItemInput, error) {
+func (s *Client) getUpdateInput(m ConcordancesModel) (*dynamodb.UpdateItemInput, error) {
 	input := &dynamodb.UpdateItemInput{}
 	k, err := dynamodbattribute.Marshal(m.UUID)
 	if err != nil {
@@ -83,7 +84,7 @@ func (s *DynamoDBClient) getUpdateInput(m ConcordancesModel) (*dynamodb.UpdateIt
 	return input, nil
 }
 
-func (s *DynamoDBClient) Delete(uuid string) (model ConcordancesModel, err error) {
+func (s *Client) Delete(uuid string) (model ConcordancesModel, err error) {
 	model = ConcordancesModel{}
 	input := &dynamodb.DeleteItemInput{}
 	input.SetReturnValues(dynamodb.ReturnValueAllOld)

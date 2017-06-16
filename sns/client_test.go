@@ -42,21 +42,21 @@ func (c AssertPublishInput) GetTopicAttributes(input *sns.GetTopicAttributesInpu
 
 func TestMessageFormattedCorrectly(t *testing.T) {
 	mockSnsService := AssertPublishInput{}
-	client := SNSClient{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
+	client := Client{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
 	actualMessage := client.message(UUID)
 	assert.Equal(t, ExpectedMessage, *actualMessage, "Expected and Actual messages did not match.")
 }
 
 func TestPublishInputHasData(t *testing.T) {
 	mockSnsService := AssertPublishInput{tT: t}
-	client := SNSClient{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
+	client := Client{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
 	err := client.SendMessage(UUID)
 	assert.NoError(t, err, "Received error")
 }
 
 func TestSNSClient_HealthcheckHappy(t *testing.T) {
 	mockSnsService := AssertPublishInput{tT: t, happy: true}
-	client := SNSClient{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
+	client := Client{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
 	happy, err := client.Healthcheck()
 	assert.NoError(t, err, "Received error.")
 	assert.True(t, happy, "SNS is not happy.")
@@ -64,7 +64,7 @@ func TestSNSClient_HealthcheckHappy(t *testing.T) {
 
 func TestSNSClient_HealthcheckUnhappy(t *testing.T) {
 	mockSnsService := AssertPublishInput{tT: t, happy: false}
-	client := SNSClient{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
+	client := Client{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
 	happy, err := client.Healthcheck()
 	assert.NotEmpty(t, err.Error())
 	assert.False(t, happy)
