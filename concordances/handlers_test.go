@@ -17,7 +17,7 @@ import (
 const (
 	TestConceptUuid = "4f50b156-6c50-4693-b835-02f70d3f3bc0"
 	Path            = "/concordances/4f50b156-6c50-4693-b835-02f70d3f3bc0"
-	GoodBody        = "{\"conceptId\":\"4f50b156-6c50-4693-b835-02f70d3f3bc0\",\"concordedIds\":[\"1\",\"2\"]}\n"
+	GoodBody        = "{\"uuid\":\"4f50b156-6c50-4693-b835-02f70d3f3bc0\",\"concordedIds\":[\"1\",\"2\"]}\n"
 )
 
 var router *mux.Router
@@ -169,12 +169,12 @@ func TestHandler_BadPath(t *testing.T) {
 }
 
 func TestHandler_BadBody(t *testing.T) {
-	mismatchedPathUuid := "{\"conceptId\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", \"concordedIds\": [\"1\"]}"
+	mismatchedPathUuid := "{\"uuid\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", \"concordedIds\": [\"1\"]}"
 	conceptId_missing := "{\"concordedIds\": [\"1\"]}"
-	concordedIds_empty := "{\"conceptId\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", \"concordedIds\": []}"
-	concordedIds_null := "{\"conceptId\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", \"concordedIds\": null}"
-	not_array := "{\"conceptId\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", \"concordedIds\": \"not_array\"}"
-	concordedIds_missing := "{\"conceptId\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", }"
+	concordedIds_empty := "{\"uuid\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", \"concordedIds\": []}"
+	concordedIds_null := "{\"uuid\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", \"concordedIds\": null}"
+	not_array := "{\"uuid\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", \"concordedIds\": \"not_array\"}"
+	concordedIds_missing := "{\"uuid\": \"4f50b156-6c50-4693-b835-02f70d3f3bc0\", }"
 
 	mismatchedPathMsg := "{\"message\":\"Invalid payload. Error: Concept UUID in payload is different from UUID path parameter\"}"
 	badConceptIdsMsg := "{\"message\":\"Invalid payload. Error: Payload has no concorded UUIDs to store.\"}"

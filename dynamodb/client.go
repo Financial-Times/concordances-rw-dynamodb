@@ -12,7 +12,7 @@ const (
 )
 
 type ConcordancesModel struct {
-	UUID         string   `json:"conceptId"`
+	UUID         string   `json:"uuid"`
 	ConcordedIds []string `json:"concordedIds"`
 }
 
