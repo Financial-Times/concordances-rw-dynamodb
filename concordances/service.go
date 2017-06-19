@@ -3,6 +3,7 @@ package concordances
 import (
 	db "github.com/Financial-Times/concordances-rw-dynamodb/dynamodb"
 	"github.com/Financial-Times/concordances-rw-dynamodb/sns"
+	log "github.com/Sirupsen/logrus"
 )
 
 type AppConfig struct {
@@ -16,8 +17,8 @@ type AppConfig struct {
 
 type Service interface {
 	Read(uuid string) (db.ConcordancesModel, error)
-	Write(m db.ConcordancesModel) (created bool, err error)
-	Delete(uuid string) (bool, error)
+	Write(m db.ConcordancesModel) (db.Status, error)
+	Delete(uuid string) (db.Status, error)
 	getDBClient() db.Clienter
 	getSNSClient() sns.Clienter
 }
@@ -42,26 +43,28 @@ func (s *ConcordancesRwService) Read(uuid string) (db.ConcordancesModel, error) 
 	return model, err
 }
 
-func (s *ConcordancesRwService) Write(m db.ConcordancesModel) (created bool, err error) {
-	model, err := s.ddb.Write(m)
+func (s *ConcordancesRwService) Write(m db.ConcordancesModel) (status db.Status, err error) {
+	status, err = s.ddb.Write(m)
 	if err != nil {
-		return created, err
-	}
-	if model.UUID == "" {
-		created = true
+		return status, err
 	}
 	err = s.sns.SendMessage(m.UUID)
-	return created, err
+	return status, err
 }
 
-func (s *ConcordancesRwService) Delete(uuid string) (bool, error) {
-	model, err := s.ddb.Delete(uuid)
-	if err != nil || model.UUID == "" {
-		return false, err
+func (s *ConcordancesRwService) Delete(uuid string) (db.Status, error) {
+	status, err := s.ddb.Delete(uuid)
+	if err != nil {
+		return status, err
 	}
 
-	err = s.sns.SendMessage(model.UUID)
-	return true, err
+	err = s.sns.SendMessage(uuid)
+
+	if err != nil {
+		log.WithError(err).WithFields(log.Fields{"UUID": uuid}).Error("Error sending Concordance to SNS")
+	}
+
+	return status, nil
 }
 
 func (s *ConcordancesRwService) getDBClient() db.Clienter {

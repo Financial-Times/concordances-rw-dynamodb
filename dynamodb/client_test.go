@@ -35,15 +35,31 @@ func init() {
 	db = setupDynamoDBLocal()
 	c = Client{dynamoDbTable: DDB_TABLE, awsRegion: AWS_REGION, ddb: db}
 }
+
 func setupTestCase(t *testing.T) func(t *testing.T) {
 	t.Log("Create table \n")
 	c = Client{dynamoDbTable: DDB_TABLE, awsRegion: AWS_REGION, ddb: db}
-	createTableIfNotExists(t)
+	err := createTableIfNotExists(t)
 
+	assert.NoError(t, err, "Unexpected error creating table")
 	return func(t *testing.T) {
-		deleteTableIfExists(t)
+		errs := deleteTableIfExists(t)
+		assert.NoError(t, errs, "Unexpected error creating table")
 		t.Log("Destroy Table \n")
 	}
+}
+
+func deleteTableIfExists(t *testing.T) error {
+	input := &dynamodb.DeleteTableInput{TableName: aws.String(DDB_TABLE)}
+	_, err := db.DeleteTable(input)
+	if err == nil {
+		return nil
+	} else if err.(awserr.Error).Code() != dynamodb.ErrCodeResourceNotFoundException {
+		assert.Fail(t, "Failed to delete table. ", err.Error())
+	} else {
+		t.Log("Table doesn't exist")
+	}
+	return err
 }
 
 func setupDynamoDBLocal() *dynamodb.DynamoDB {
@@ -63,7 +79,6 @@ func createTableIfNotExists(t *testing.T) error {
 	_, err := db.DescribeTable(DescribeTableParams)
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-
 			if awsErr.Code() == dynamodb.ErrCodeResourceNotFoundException {
 				params := &dynamodb.CreateTableInput{
 					AttributeDefinitions: []*dynamodb.AttributeDefinition{ // Required
@@ -87,7 +102,7 @@ func createTableIfNotExists(t *testing.T) error {
 					TableName: aws.String(DDB_TABLE), // Required
 				}
 				_, err := db.CreateTable(params)
-				assert.NoError(t, err)
+				assert.NoError(t, err, "Unable to create the table")
 			}
 		} else {
 			assert.Fail(t, fmt.Sprintf("Failed to connect to local DynamoDB. Error: %s", err.Error()))
@@ -95,48 +110,13 @@ func createTableIfNotExists(t *testing.T) error {
 		}
 
 	}
-	return err
-}
-
-func deleteTableIfExists(t *testing.T) error {
-	input := &dynamodb.DeleteTableInput{TableName: aws.String(DDB_TABLE)}
-	_, err := db.DeleteTable(input)
-	if err == nil {
-		return nil
-	} else if err.(awserr.Error).Code() != dynamodb.ErrCodeResourceNotFoundException {
-		assert.Fail(t, "Failed to delete table. ", err.Error())
-	} else {
-		t.Log("Table doesn't exist")
-	}
-	return err
-}
-
-func TestDeleteTableThatExists(t *testing.T) {
-	createTableIfNotExists(t)
-	deleteTableIfExists(t)
-	_, err := db.DescribeTable(DescribeTableParams)
-	assert.True(t, (err.(awserr.Error).Code() == dynamodb.ErrCodeResourceNotFoundException))
-}
-
-func TestDeleteNonExistentTable(t *testing.T) {
-	deleteTableIfExists(t)
-	err := deleteTableIfExists(t)
-	assert.True(t, (err.(awserr.Error).Code() == dynamodb.ErrCodeResourceNotFoundException))
-}
-
-func TestCreateTableThatAlreadyExists(t *testing.T) {
-	createTableIfNotExists(t)
-	err := createTableIfNotExists(t)
-	assert.NoError(t, err)
-}
-func TestCreateTableIfNotExists(t *testing.T) {
-	deleteTableIfExists(t)
-	createTableIfNotExists(t)
-	_, err := db.DescribeTable(DescribeTableParams)
-	assert.NoError(t, err)
+	return nil
 }
 
 func TestUpdateInputIsValid(t *testing.T) {
+	tearDownTestCase := setupTestCase(t)
+	defer tearDownTestCase(t)
+
 	input, err := c.getUpdateInput(goodModel)
 
 	assert.NoError(t, err, "Received error")
@@ -147,10 +127,10 @@ func TestCreateConcordance(t *testing.T) {
 	tearDownTestCase := setupTestCase(t)
 	defer tearDownTestCase(t)
 
-	oldModel, err := c.Write(goodModel)
+	status, err := c.Write(goodModel)
 
 	assert.NoError(t, err, "Failed to write concordance.")
-	assert.Empty(t, oldModel.UUID)
+	assert.Equal(t, status, CONCEPT_CREATED)
 	newModel, err := c.Read(UUID)
 	assert.True(t, reflect.DeepEqual(goodModel, newModel), "Failed to create concordance record")
 }
@@ -165,11 +145,11 @@ func TestUpdateConcordance(t *testing.T) {
 		UUID:         "4f50b156-6c50-4693-b835-02f70d3f3bc0",
 		ConcordedIds: []string{"7c4b3931-361f-4ea4-b694-75d1630d7746"},
 	}
-	oldModel, err := c.Write(newModel)
+	status, err := c.Write(newModel)
 
 	updatedModel, err := c.Read(UUID)
 
-	assert.True(t, reflect.DeepEqual(goodModel, oldModel), "Failed to retrive old concordance record")
+	assert.Equal(t, status, CONCEPT_UPDATED)
 	assert.True(t, reflect.DeepEqual(newModel, updatedModel), "Failed to update concordance record")
 }
 
@@ -180,20 +160,20 @@ func TestDeleteExistingConcordance(t *testing.T) {
 	_, err := c.Write(goodModel)
 	assert.NoError(t, err, "Failed to set up concordance to be deleted")
 
-	oldModel, err := c.Delete(UUID)
+	status, err := c.Delete(UUID)
 
 	assert.NoError(t, err, "Deletion operation resulted in error.")
-	assert.True(t, reflect.DeepEqual(goodModel, oldModel), "Failed to retrive old concordance record upon deletion")
+	assert.Equal(t, status, CONCEPT_DELETED,  "Unexpected status on deleting existing concordance")
 }
 
 func TestDeleteNonExistingConcordance(t *testing.T) {
 	tearDownTestCase := setupTestCase(t)
 	defer tearDownTestCase(t)
 
-	oldModel, err := c.Delete(UUID)
+	status, err := c.Delete(UUID)
 
 	assert.NoError(t, err, "Deletion operation resulted in error.")
-	assert.Empty(t, oldModel.UUID, "Failed to retrive old concordance record upon deletion")
+	assert.Equal(t, status, CONCEPT_NOT_FOUND, "Unexpected status, expected to not find a concordance")
 }
 
 func TestReadExistingConcordance(t *testing.T) {
