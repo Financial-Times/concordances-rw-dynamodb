@@ -70,8 +70,9 @@ func (s *Client) Read(uuid string) (ConcordancesModel, error) {
 		log.WithError(err).WithFields(log.Fields{"UUID": uuid}).Error("Error Getting Concordance Record")
 		return ConcordancesModel{}, err
 	}
+
 	if output.Item == nil {
-		log.WithField("UUID", uuid).Info("Concept not found")
+		log.WithField("UUID", uuid).Info("No concordance record was found")
 	}
 
 	err = dynamodbattribute.UnmarshalMap(output.Item, &m)
