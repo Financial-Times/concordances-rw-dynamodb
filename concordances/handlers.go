@@ -125,14 +125,14 @@ func (h *Handler) HandlePut(rw http.ResponseWriter, r *http.Request) {
 	status, err := h.srv.Write(model)
 
 	//503
-	if err != nil || status == db.CONCEPT_ERROR{
+	if err != nil || status == db.CONCORDANCE_ERROR {
 		logMsg := fmt.Sprintf(LogMsg503, "storing")
 		log.WithFields(log.Fields{"UUID": uuid}).Errorf("%s %s", logMsg, err.Error())
 		writeJSONError(rw, logMsg, http.StatusServiceUnavailable)
 		return
 	}
 
-	if status == db.CONCEPT_CREATED {
+	if status == db.CONCORDANCE_CREATED {
 		rw.WriteHeader(http.StatusCreated)
 		return
 	} else {
@@ -146,14 +146,14 @@ func (h *Handler) HandleDelete(rw http.ResponseWriter, r *http.Request) {
 	status, err := h.srv.Delete(uuid)
 
 	//503
-	if err != nil || status == db.CONCEPT_ERROR {
+	if err != nil || status == db.CONCORDANCE_ERROR {
 		logMsg := fmt.Sprintf(LogMsg503, "deleting")
 		log.WithFields(log.Fields{"UUID": uuid}).Errorf("%s %s", logMsg, err.Error())
 		writeJSONError(rw, logMsg, http.StatusServiceUnavailable)
 		return
 	}
 	//404
-	if status == db.CONCEPT_NOT_FOUND {
+	if status == db.CONCORDANCE_NOT_FOUND {
 		log.WithFields(log.Fields{"UUID": uuid}).Infof("%s for %s", LogMsg404, uuid)
 		writeJSONError(rw, LogMsg404, http.StatusNotFound)
 		return

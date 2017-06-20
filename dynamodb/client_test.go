@@ -130,7 +130,7 @@ func TestCreateConcordance(t *testing.T) {
 	status, err := c.Write(goodModel)
 
 	assert.NoError(t, err, "Failed to write concordance.")
-	assert.Equal(t, status, CONCEPT_CREATED)
+	assert.Equal(t, status, CONCORDANCE_CREATED)
 	newModel, err := c.Read(UUID)
 	assert.True(t, reflect.DeepEqual(goodModel, newModel), "Failed to create concordance record")
 }
@@ -149,7 +149,7 @@ func TestUpdateConcordance(t *testing.T) {
 
 	updatedModel, err := c.Read(UUID)
 
-	assert.Equal(t, status, CONCEPT_UPDATED)
+	assert.Equal(t, status, CONCORDANCE_UPDATED)
 	assert.True(t, reflect.DeepEqual(newModel, updatedModel), "Failed to update concordance record")
 }
 
@@ -163,7 +163,7 @@ func TestDeleteExistingConcordance(t *testing.T) {
 	status, err := c.Delete(UUID)
 
 	assert.NoError(t, err, "Deletion operation resulted in error.")
-	assert.Equal(t, status, CONCEPT_DELETED,  "Unexpected status on deleting existing concordance")
+	assert.Equal(t, status, CONCORDANCE_DELETED,  "Unexpected status on deleting existing concordance")
 }
 
 func TestDeleteNonExistingConcordance(t *testing.T) {
@@ -173,7 +173,7 @@ func TestDeleteNonExistingConcordance(t *testing.T) {
 	status, err := c.Delete(UUID)
 
 	assert.NoError(t, err, "Deletion operation resulted in error.")
-	assert.Equal(t, status, CONCEPT_NOT_FOUND, "Unexpected status, expected to not find a concordance")
+	assert.Equal(t, status, CONCORDANCE_NOT_FOUND, "Unexpected status, expected to not find a concordance")
 }
 
 func TestReadExistingConcordance(t *testing.T) {

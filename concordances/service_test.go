@@ -47,7 +47,7 @@ func TestServiceCreate_NoError(t *testing.T) {
 	status, err := srv.Write(updateModel)
 
 	assert.NoError(t, err, "Failed on service error.")
-	assert.Equal(t, db.CONCEPT_CREATED, status, "Did not detect that new record was created.")
+	assert.Equal(t, db.CONCORDANCE_CREATED, status, "Did not detect that new record was created.")
 	assert.True(t, snsClient.Invoked, "Did not envoke sns Client")
 }
 
@@ -60,7 +60,7 @@ func TestServiceUpdate_NoError(t *testing.T) {
 	status, err := srv.Write(updateModel)
 
 	assert.NoError(t, err, "Failed on service error.")
-	assert.Equal(t, db.CONCEPT_UPDATED, status, "Did not detect that record was updated.")
+	assert.Equal(t, db.CONCORDANCE_UPDATED, status, "Did not detect that record was updated.")
 	assert.True(t, snsClient.Invoked, "Did not envoke sns Client")
 }
 
@@ -71,7 +71,7 @@ func TestServiceWrite_DynamoDbError(t *testing.T) {
 	updateModel := db.ConcordancesModel{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
 	status, err := srv.Write(updateModel)
 	assert.Equal(t, DDB_ERROR, err.Error(), "Failed to return service error.")
-	assert.Equal(t, db.CONCEPT_ERROR, status, "Did not detect existing record was updated.")
+	assert.Equal(t, db.CONCORDANCE_ERROR, status, "Did not detect existing record was updated.")
 	assert.False(t, snsClient.Invoked, "Should not have invoked sns Client when error from DynamoDB")
 }
 
@@ -92,7 +92,7 @@ func TestServiceDelete_Deleted(t *testing.T) {
 	srv := createService(&ddbClient, &snsClient)
 	status, err := srv.Delete(EXPECTED_UUID)
 	assert.NoError(t, err, "Successful deletion should not have returned error")
-	assert.Equal(t, db.CONCEPT_DELETED, status, "Successul deletion should have returned True.")
+	assert.Equal(t, db.CONCORDANCE_DELETED, status, "Successul deletion should have returned True.")
 }
 
 func TestServiceDelete_NotFound(t *testing.T) {
@@ -101,7 +101,7 @@ func TestServiceDelete_NotFound(t *testing.T) {
 	srv := createService(&ddbClient, &snsClient)
 	status, err := srv.Delete(EXPECTED_UUID)
 	assert.NoError(t, err, "Successful deletion should not have returned error")
-	assert.Equal(t, db.CONCEPT_NOT_FOUND, status, "When no record to delete should have returned False.")
+	assert.Equal(t, db.CONCORDANCE_NOT_FOUND, status, "When no record to delete should have returned False.")
 }
 
 func TestServiceDelete_DynamoDbError(t *testing.T) {
@@ -170,25 +170,25 @@ func (ddb *MockDynamoDBClient) Read(uuid string) (db.ConcordancesModel, error) {
 
 func (ddb *MockDynamoDBClient) Write(m db.ConcordancesModel) (db.Status, error) {
 	if !ddb.Happy {
-		return db.CONCEPT_ERROR, errors.New(DDB_ERROR)
+		return db.CONCORDANCE_ERROR, errors.New(DDB_ERROR)
 	}
 
 	if ddb.model.UUID == "" {
 		ddb.model = m
-		return db.CONCEPT_CREATED, nil
+		return db.CONCORDANCE_CREATED, nil
 	}
 	ddb.model = m
-	return db.CONCEPT_UPDATED, nil
+	return db.CONCORDANCE_UPDATED, nil
 }
 
 func (ddb *MockDynamoDBClient) Delete(uuid string) (db.Status, error) {
 	if !ddb.Happy {
-		return db.CONCEPT_ERROR, errors.New(DDB_ERROR)
+		return db.CONCORDANCE_ERROR, errors.New(DDB_ERROR)
 	}
 	if ddb.model.UUID == "" {
-		return db.CONCEPT_NOT_FOUND, nil
+		return db.CONCORDANCE_NOT_FOUND, nil
 	}
-	return db.CONCEPT_DELETED, nil
+	return db.CONCORDANCE_DELETED, nil
 }
 
 type MockService struct {
@@ -204,14 +204,14 @@ func (mock *MockService) Read(uuid string) (db.ConcordancesModel, error) {
 
 func (mock *MockService) Write(m db.ConcordancesModel) (db.Status, error) {
 	if mock.status == 0 {
-		return db.CONCEPT_CREATED, mock.err
+		return db.CONCORDANCE_CREATED, mock.err
 	}
 	return mock.status, mock.err
 }
 
 func (mock *MockService) Delete(uuid string) (db.Status, error) {
 	if mock.status == 0 {
-		return db.CONCEPT_DELETED, mock.err
+		return db.CONCORDANCE_DELETED, mock.err
 	}
 	return mock.status, mock.err
 }

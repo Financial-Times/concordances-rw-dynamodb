@@ -16,11 +16,11 @@ const (
 type Status int
 
 const (
-	CONCEPT_CREATED Status = iota
-	CONCEPT_DELETED
-	CONCEPT_NOT_FOUND
-	CONCEPT_UPDATED
-	CONCEPT_ERROR
+	CONCORDANCE_CREATED   Status = iota
+	CONCORDANCE_DELETED
+	CONCORDANCE_NOT_FOUND
+	CONCORDANCE_UPDATED
+	CONCORDANCE_ERROR
 )
 
 type ConcordancesModel struct {
@@ -90,21 +90,21 @@ func (s *Client) Write(m ConcordancesModel) (updateStatus Status, err error) {
 	output, err := s.ddb.UpdateItem(input)
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{"UUID": m.UUID, "ConcordedIds": strings.Join(m.ConcordedIds, ", ")}).Error("Error Getting Concordance Record")
-		return CONCEPT_ERROR, err
+		return CONCORDANCE_ERROR, err
 	}
 
 	err = dynamodbattribute.UnmarshalMap(output.Attributes, &model)
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{"UUID": m.UUID, "ConcordedIds": strings.Join(m.ConcordedIds, ", ")}).Error("Error unmarshalling the response to writing Concordance Record")
-		return CONCEPT_ERROR, err
+		return CONCORDANCE_ERROR, err
 	}
 
 	if model.UUID != "" {
 		log.WithError(err).WithFields(log.Fields{"UUID": m.UUID, "ConcordedIds": strings.Join(m.ConcordedIds, ", ")}).Info("Concordance updated")
-		return CONCEPT_UPDATED, nil
+		return CONCORDANCE_UPDATED, nil
 	} else {
 		log.WithError(err).WithFields(log.Fields{"UUID": m.UUID, "ConcordedIds": strings.Join(m.ConcordedIds, ", ")}).Info("Concordance created")
-		return CONCEPT_CREATED, nil
+		return CONCORDANCE_CREATED, nil
 	}
 }
 func (s *Client) getUpdateInput(m ConcordancesModel) (*dynamodb.UpdateItemInput, error) {
@@ -136,26 +136,25 @@ func (s *Client) Delete(uuid string) (status Status, err error) {
 	k, err := dynamodbattribute.Marshal(uuid)
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{"UUID": uuid}).Error("Error marshalling UUID to Dynamo Key for Deletion of a concordance")
-		return CONCEPT_ERROR, err
+		return CONCORDANCE_ERROR, err
 	}
 
 	input.SetKey(map[string]*dynamodb.AttributeValue{TableHashKey: k})
 	output, err := s.ddb.DeleteItem(input)
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{"UUID": uuid}).Error("Error Deleting Concordance")
-		return CONCEPT_ERROR, err
+		return CONCORDANCE_ERROR, err
 	}
 
 	err = dynamodbattribute.UnmarshalMap(output.Attributes, &model)
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{"UUID": uuid}).Error("Error Unmarshalling response from deleting concordance - Unable to ascertain whether the delete was a delete/not found")
-		return CONCEPT_ERROR, err
+		return CONCORDANCE_ERROR, err
 	}
 
 	if model.UUID != "" {
-
-		return CONCEPT_DELETED, nil
+		return CONCORDANCE_DELETED, nil
 	} else {
-		return CONCEPT_NOT_FOUND, nil
+		return CONCORDANCE_NOT_FOUND, nil
 	}
 }

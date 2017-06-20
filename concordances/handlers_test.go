@@ -80,33 +80,33 @@ func TestHandler_ResponseCodesAndMessages(t *testing.T) {
 		{
 			description:          "GET 404 Not Found",
 			request:              newRequest("GET", Path, ""),
-			service:              &MockService{model: db.ConcordancesModel{}, status:db.CONCEPT_NOT_FOUND},
+			service:              &MockService{model: db.ConcordancesModel{}, status:db.CONCORDANCE_NOT_FOUND},
 			expectedResponseCode: 404,
 			expectedContentType:  ContentTypeJson,
 		},
 		{
 			description:          "DELETE 404 Not Found",
 			request:              newRequest("DELETE", Path, ""),
-			service:              &MockService{status: db.CONCEPT_NOT_FOUND},
+			service:              &MockService{status: db.CONCORDANCE_NOT_FOUND},
 			expectedResponseCode: 404,
 			expectedContentType:  ContentTypeJson,
 		},
 		{
 			description:          "DELETE 204 Deleted",
 			request:              newRequest("DELETE", Path, ""),
-			service:              &MockService{status: db.CONCEPT_DELETED},
+			service:              &MockService{status: db.CONCORDANCE_DELETED},
 			expectedResponseCode: 204,
 		},
 		{
 			description:          "PUT 201 Created",
 			request:              newRequest("PUT", Path, GoodBody),
-			service:              &MockService{status: db.CONCEPT_CREATED},
+			service:              &MockService{status: db.CONCORDANCE_CREATED},
 			expectedResponseCode: 201,
 		},
 		{
 			description:          "PUT 200 Updated",
 			request:              newRequest("PUT", Path, GoodBody),
-			service:              &MockService{status: db.CONCEPT_UPDATED},
+			service:              &MockService{status: db.CONCORDANCE_UPDATED},
 			expectedResponseCode: 200,
 		},
 		{
