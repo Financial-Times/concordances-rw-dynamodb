@@ -199,3 +199,12 @@ func TestReadNonExistingConcordance(t *testing.T) {
 	assert.Empty(t, model.UUID, "Failed to retrive old concordance record upon deletion")
 	assert.Empty(t, model.ConcordedIds, "Failed to retrive old concordance record upon deletion")
 }
+
+func TestClient_Healthcheck(t *testing.T) {
+	tearDownTestCase := setupTestCase(t)
+	defer tearDownTestCase(t)
+
+	err := c.Healthcheck()
+
+	assert.NoError(t, err, "Unexpected error occurred in healthcheck")
+}

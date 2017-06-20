@@ -191,6 +191,10 @@ func (ddb *MockDynamoDBClient) Delete(uuid string) (db.Status, error) {
 	return db.CONCORDANCE_DELETED, nil
 }
 
+func (ddb *MockDynamoDBClient) Healthcheck() (error) {
+	return nil
+}
+
 type MockService struct {
 	model   db.ConcordancesModel
 	status db.Status

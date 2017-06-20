@@ -37,6 +37,7 @@ type Clienter interface {
 	Read(uuid string) (ConcordancesModel, error)
 	Write(m ConcordancesModel) (Status, error)
 	Delete(uuid string) (Status, error)
+	Healthcheck() (error)
 }
 
 type Client struct {
@@ -158,4 +159,9 @@ func (s *Client) Delete(uuid string) (status Status, err error) {
 	} else {
 		return CONCORDANCE_NOT_FOUND, nil
 	}
+}
+
+func (s *Client) Healthcheck() (error) {
+	_, err := s.ddb.DescribeTable(&dynamodb.DescribeTableInput{TableName: &s.dynamoDbTable})
+	return err
 }
