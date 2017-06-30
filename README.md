@@ -81,16 +81,6 @@ _response:_
       "concordedIds": ["7c4b3931-361f-4ea4-b694-75d1630d7746", "1e5c86f8-3f38-4b6b-97ce-f75489ac3113", "0e5033fe-d079-485c-a6a1-8158ad4f37ce"]
     }
  
- ### GET
-_request:_
-_summary:_ `Concordances records count.`  
-_description:_ `Gets the total count of stored concordances records.`  
-  
-    curl -X GET "https://user:pass@pub-prod-up.ft.com/__concordances-rw-dynamodb/concordances/__count" -H  "accept: text/plain"
-    HTTP/1.1 200 OK
-    Content-Type: text/plain
-    100
-
 ### PUT
 _summary:_ `Stores the concordances record for a given UUID of a concept.`  
 _description:_ `Expects body in json format. Expects uuid path parameter and uuid json property in the body to match. The UUID in the URL should be the primary object, if the distinction exists (eg. where the two objects are of the same type).`  
