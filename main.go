@@ -95,13 +95,13 @@ func main() {
 
 		log.Infof("Listening on %v", *port)
 		if err := http.ListenAndServe(":"+*port, router); err != nil {
-			log.Fatalf("Unable to start server: %v", err)
+			log.WithError(err).Fatal("Unable to start server")
 		}
 
 	}
 	err = app.Run(os.Args)
 	if err != nil {
-		log.Errorf("App could not start, error=[%s]\n", err)
+		log.WithError(err).Error("App could not start")
 		return
 	}
 }
