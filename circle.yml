@@ -17,10 +17,12 @@ checkout:
 
 dependencies:
   pre:
+    - go get github.com/axw/gocov/gocov; go get github.com/matm/gocov-html; go get -u github.com/jstemmer/go-junit-report
     - go get -u github.com/kardianos/govendor
   override:
-    - cd $PROJECT_PATH && govendor sync
-    - cd $PROJECT_PATH && go build -v
+    - cd $GO_PROJECT_PATH && govendor sync
+    - cd $GO_PROJECT_PATH && go build -v
+
   post:
     - curl -k -L -o dynamodb-local.tgz http://dynamodb-local.s3-website-us-west-2.amazonaws.com/dynamodb_local_latest.tar.gz
     - tar -xzf dynamodb-local.tgz
@@ -31,10 +33,13 @@ test:
   pre:
     - go get -u github.com/jstemmer/go-junit-report
     - go get -u github.com/mattn/goveralls
-    - cd $PROJECT_PATH && wget https://raw.githubusercontent.com/Financial-Times/cookiecutter-upp-golang/master/coverage.sh && chmod +x coverage.sh
   override:
     - mkdir -p $CIRCLE_TEST_REPORTS/golang
-    - cd $PROJECT_PATH && govendor test -race -v +local | go-junit-report > $CIRCLE_TEST_REPORTS/golang/junit.xml
-    - cd $PROJECT_PATH && ./coverage.sh
+    - cd $GO_PROJECT_PATH && govendor test -race -v +local | go-junit-report > $CIRCLE_TEST_REPORTS/golang/junit.xml
+    - cd $GO_PROJECT_PATH && govendor list +local | awk -F/ '{ print $4}' | tr " " "\n" | xargs -I {} govendor test -v -cover -race -coverprofile=$CIRCLE_ARTIFACTS/{}.out ./{}
+    - cd $CIRCLE_ARTIFACTS && sed -i '1d' *.out
+    -
+      echo "mode: atomic" > $CIRCLE_ARTIFACTS/overall-coverage.result
+    - cd $CIRCLE_ARTIFACTS && cat *.out >> overall-coverage.result
   post:
-    - goveralls -coverprofile=$CIRCLE_ARTIFACTS/coverage.out -service=circle-ci -repotoken=$COVERALLS_TOKEN
+    - goveralls -coverprofile=$CIRCLE_ARTIFACTS/overall-coverage.result -service=circle-ci -repotoken=$COVERALLS_TOKEN
