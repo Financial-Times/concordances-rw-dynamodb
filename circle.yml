@@ -13,7 +13,7 @@ machine:
 checkout:
   post:
     - mkdir -p "${PROJECT_PARENT_PATH}"
-    - rsync -avC "${HOME}/${CIRCLE_PROJECT_REPONAME}/" "${PROJECT_PATH}"
+    - ln -fs $HOME/$CIRCLE_PROJECT_REPONAME $GO_PROJECT_PATH
 
 dependencies:
   pre:
