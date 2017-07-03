@@ -16,7 +16,7 @@ const (
 )
 
 type Clienter interface {
-	SendMessage(uuid string) error
+	SendMessage(uuid string, transactionId string) error
 	Healthcheck() (bool, error)
 }
 
@@ -39,7 +39,7 @@ func (c *Client) message(uuid string) *string {
 	return aws.String(m)
 }
 
-func (c *Client) SendMessage(uuid string) (err error) {
+func (c *Client) SendMessage(uuid string, transactionId string) (err error) {
 
 	params := &sns.PublishInput{
 		Message:  c.message(uuid),
@@ -47,10 +47,13 @@ func (c *Client) SendMessage(uuid string) (err error) {
 	}
 	resp, err := c.client.Publish(params)
 
-	if resp != nil {
-		log.Infof("Concordance Notification for concept uuid [%s] was posted to topic[%s]. SNS response: %s", uuid, c.topicArn, resp.String())
+	if err == nil {
+		log.WithFields(log.Fields{"transaction_id":transactionId, "UUID": uuid, "Topic": c.topicArn, "SNS_Response": resp.String()}).Info("Error sending concordance event record to SNS")
+		return err
 	}
-	return err
+
+	log.WithFields(log.Fields{"transaction_id":transactionId, "UUID": uuid, "Topic": c.topicArn, "SNS_Response": resp.String()}).Info("Successfully sent concordance event record to SNS")
+	return nil
 }
 
 func (c *Client) Healthcheck() (bool, error) {

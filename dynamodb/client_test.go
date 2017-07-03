@@ -127,11 +127,11 @@ func TestCreateConcordance(t *testing.T) {
 	tearDownTestCase := setupTestCase(t)
 	defer tearDownTestCase(t)
 
-	status, err := c.Write(goodModel)
+	status, err := c.Write(goodModel, "test_transaction_id")
 
 	assert.NoError(t, err, "Failed to write concordance.")
 	assert.Equal(t, status, CONCORDANCE_CREATED)
-	newModel, err := c.Read(UUID)
+	newModel, err := c.Read(UUID, "test_transaction_id")
 	assert.True(t, reflect.DeepEqual(goodModel, newModel), "Failed to create concordance record")
 }
 
@@ -139,15 +139,15 @@ func TestUpdateConcordance(t *testing.T) {
 	tearDownTestCase := setupTestCase(t)
 	defer tearDownTestCase(t)
 
-	_, err := c.Write(goodModel)
+	_, err := c.Write(goodModel, "test_transaction_id")
 	assert.NoError(t, err, "Failed to write concordance.")
 	newModel := ConcordancesModel{
 		UUID:         "4f50b156-6c50-4693-b835-02f70d3f3bc0",
 		ConcordedIds: []string{"7c4b3931-361f-4ea4-b694-75d1630d7746"},
 	}
-	status, err := c.Write(newModel)
+	status, err := c.Write(newModel, "test_transaction_id")
 
-	updatedModel, err := c.Read(UUID)
+	updatedModel, err := c.Read(UUID, "test_transaction_id")
 
 	assert.Equal(t, status, CONCORDANCE_UPDATED)
 	assert.True(t, reflect.DeepEqual(newModel, updatedModel), "Failed to update concordance record")
@@ -157,10 +157,10 @@ func TestDeleteExistingConcordance(t *testing.T) {
 	tearDownTestCase := setupTestCase(t)
 	defer tearDownTestCase(t)
 
-	_, err := c.Write(goodModel)
+	_, err := c.Write(goodModel, "test_transaction_id")
 	assert.NoError(t, err, "Failed to set up concordance to be deleted")
 
-	status, err := c.Delete(UUID)
+	status, err := c.Delete(UUID, "test_transaction_id")
 
 	assert.NoError(t, err, "Deletion operation resulted in error.")
 	assert.Equal(t, status, CONCORDANCE_DELETED,  "Unexpected status on deleting existing concordance")
@@ -170,7 +170,7 @@ func TestDeleteNonExistingConcordance(t *testing.T) {
 	tearDownTestCase := setupTestCase(t)
 	defer tearDownTestCase(t)
 
-	status, err := c.Delete(UUID)
+	status, err := c.Delete(UUID, "test_transaction_id")
 
 	assert.NoError(t, err, "Deletion operation resulted in error.")
 	assert.Equal(t, status, CONCORDANCE_NOT_FOUND, "Unexpected status, expected to not find a concordance")
@@ -180,10 +180,10 @@ func TestReadExistingConcordance(t *testing.T) {
 	tearDownTestCase := setupTestCase(t)
 	defer tearDownTestCase(t)
 
-	_, err := c.Write(goodModel)
+	_, err := c.Write(goodModel, "test_transaction_id")
 	assert.NoError(t, err, "failed to set up concordance to be read.")
 
-	model, err := c.Read(UUID)
+	model, err := c.Read(UUID, "test_transaction_id")
 
 	assert.NoError(t, err, "Retrieving concordance resulted in error.")
 	assert.True(t, reflect.DeepEqual(goodModel, model), "Failed to retrive old concordance record")
@@ -193,7 +193,7 @@ func TestReadNonExistingConcordance(t *testing.T) {
 	tearDownTestCase := setupTestCase(t)
 	defer tearDownTestCase(t)
 
-	model, err := c.Read(UUID)
+	model, err := c.Read(UUID, "test_transaction_id")
 
 	assert.NoError(t, err, "Retrieving concordance resulted in error.")
 	assert.Empty(t, model.UUID, "Failed to retrive old concordance record upon deletion")

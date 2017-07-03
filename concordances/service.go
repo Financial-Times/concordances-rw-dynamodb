@@ -16,9 +16,9 @@ type AppConfig struct {
 }
 
 type Service interface {
-	Read(uuid string) (db.ConcordancesModel, error)
-	Write(m db.ConcordancesModel) (db.Status, error)
-	Delete(uuid string) (db.Status, error)
+	Read(uuid string, transactionId string) (db.ConcordancesModel, error)
+	Write(m db.ConcordancesModel, transactionId string) (db.Status, error)
+	Delete(uuid string, transactionId string) (db.Status, error)
 	getDBClient() db.Clienter
 	getSNSClient() sns.Clienter
 }
@@ -38,30 +38,31 @@ func NewConcordancesRwService(conf AppConfig) Service {
 
 }
 
-func (s *ConcordancesRwService) Read(uuid string) (db.ConcordancesModel, error) {
-	model, err := s.ddb.Read(uuid)
+func (s *ConcordancesRwService) Read(uuid string, transactionId string) (db.ConcordancesModel, error) {
+	model, err := s.ddb.Read(uuid, transactionId)
 	return model, err
 }
 
-func (s *ConcordancesRwService) Write(m db.ConcordancesModel) (status db.Status, err error) {
-	status, err = s.ddb.Write(m)
+func (s *ConcordancesRwService) Write(m db.ConcordancesModel, transactionId string) (status db.Status, err error) {
+	status, err = s.ddb.Write(m, transactionId)
 	if err != nil {
 		return status, err
 	}
-	err = s.sns.SendMessage(m.UUID)
+	err = s.sns.SendMessage(m.UUID, transactionId)
 	return status, err
 }
 
-func (s *ConcordancesRwService) Delete(uuid string) (db.Status, error) {
-	status, err := s.ddb.Delete(uuid)
+func (s *ConcordancesRwService) Delete(uuid string, transactionId string) (db.Status, error) {
+	status, err := s.ddb.Delete(uuid, transactionId)
+
 	if err != nil {
 		return status, err
 	}
 
-	err = s.sns.SendMessage(uuid)
+	err = s.sns.SendMessage(uuid, transactionId)
 
 	if err != nil {
-		log.WithError(err).WithFields(log.Fields{"UUID": uuid}).Error("Error sending Concordance to SNS")
+		log.WithError(err).WithFields(log.Fields{"UUID": uuid, "transaction_id": transactionId}).Error("Error sending Concordance to SNS")
 	}
 
 	return status, nil

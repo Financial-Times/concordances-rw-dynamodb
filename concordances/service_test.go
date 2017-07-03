@@ -23,7 +23,7 @@ func TestServiceRead_NoError(t *testing.T) {
 	snsClient := MockSNSClient{}
 	srv := createService(&ddbClient, &snsClient)
 
-	m, err := srv.Read(EXPECTED_UUID)
+	m, err := srv.Read(EXPECTED_UUID, "testing_tid_1234")
 	assert.NoError(t, err, "Failed on service error.")
 	assert.True(t, reflect.DeepEqual(oldModel, m), "Model did not match.")
 	assert.False(t, snsClient.Invoked, "Should not send sns notifications on read")
@@ -33,7 +33,7 @@ func TestServiceRead_DynamoBbError(t *testing.T) {
 	ddbClient := MockDynamoDBClient{Happy: false}
 	snsClient := MockSNSClient{}
 	srv := createService(&ddbClient, &snsClient)
-	_, err := srv.Read(EXPECTED_UUID)
+	_, err := srv.Read(EXPECTED_UUID, "testing_tid_1234")
 	assert.Equal(t, DDB_ERROR, err.Error(), "Failed to return service error.")
 	assert.False(t, snsClient.Invoked, "Should not send sns notifications on read")
 }
@@ -44,7 +44,7 @@ func TestServiceCreate_NoError(t *testing.T) {
 	srv := createService(&ddbClient, &snsClient)
 	updateModel := db.ConcordancesModel{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
 
-	status, err := srv.Write(updateModel)
+	status, err := srv.Write(updateModel, "testing_tid_1234")
 
 	assert.NoError(t, err, "Failed on service error.")
 	assert.Equal(t, db.CONCORDANCE_CREATED, status, "Did not detect that new record was created.")
@@ -57,7 +57,7 @@ func TestServiceUpdate_NoError(t *testing.T) {
 	srv := createService(&ddbClient, &snsClient)
 	updateModel := db.ConcordancesModel{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
 
-	status, err := srv.Write(updateModel)
+	status, err := srv.Write(updateModel, "testing_tid_1234")
 
 	assert.NoError(t, err, "Failed on service error.")
 	assert.Equal(t, db.CONCORDANCE_UPDATED, status, "Did not detect that record was updated.")
@@ -69,7 +69,7 @@ func TestServiceWrite_DynamoDbError(t *testing.T) {
 	snsClient := MockSNSClient{Happy: true}
 	srv := createService(&ddbClient, &snsClient)
 	updateModel := db.ConcordancesModel{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
-	status, err := srv.Write(updateModel)
+	status, err := srv.Write(updateModel, "testing_tid_1234")
 	assert.Equal(t, DDB_ERROR, err.Error(), "Failed to return service error.")
 	assert.Equal(t, db.CONCORDANCE_ERROR, status, "Did not detect existing record was updated.")
 	assert.False(t, snsClient.Invoked, "Should not have invoked sns Client when error from DynamoDB")
@@ -80,7 +80,7 @@ func TestServiceWrite_SnsError(t *testing.T) {
 	snsClient := MockSNSClient{Happy: false}
 	srv := createService(&ddbClient, &snsClient)
 
-	_, err := srv.Write(updateModel)
+	_, err := srv.Write(updateModel, "testing_tid_1234")
 
 	assert.True(t, snsClient.Invoked, "Should have invoked sns Client when no error from DynamoDB")
 	assert.Equal(t, SNS_ERROR, err.Error(), "Did not return SNS error.")
@@ -90,7 +90,7 @@ func TestServiceDelete_Deleted(t *testing.T) {
 	ddbClient := MockDynamoDBClient{Happy: true, model: oldModel}
 	snsClient := MockSNSClient{Happy: true}
 	srv := createService(&ddbClient, &snsClient)
-	status, err := srv.Delete(EXPECTED_UUID)
+	status, err := srv.Delete(EXPECTED_UUID, "testing_tid_1234")
 	assert.NoError(t, err, "Successful deletion should not have returned error")
 	assert.Equal(t, db.CONCORDANCE_DELETED, status, "Successul deletion should have returned True.")
 }
@@ -99,7 +99,7 @@ func TestServiceDelete_NotFound(t *testing.T) {
 	ddbClient := MockDynamoDBClient{Happy: true, model: db.ConcordancesModel{}}
 	snsClient := MockSNSClient{Happy: true}
 	srv := createService(&ddbClient, &snsClient)
-	status, err := srv.Delete(EXPECTED_UUID)
+	status, err := srv.Delete(EXPECTED_UUID, "testing_tid_1234")
 	assert.NoError(t, err, "Successful deletion should not have returned error")
 	assert.Equal(t, db.CONCORDANCE_NOT_FOUND, status, "When no record to delete should have returned False.")
 }
@@ -109,7 +109,7 @@ func TestServiceDelete_DynamoDbError(t *testing.T) {
 	snsClient := MockSNSClient{Happy: true}
 	srv := createService(&ddbClient, &snsClient)
 
-	_, err := srv.Delete(EXPECTED_UUID)
+	_, err := srv.Delete(EXPECTED_UUID, "testing_tid_1234")
 
 	assert.Equal(t, DDB_ERROR, err.Error(), "Failed to return service error.")
 	assert.False(t, snsClient.Invoked, "Should not have invoked sns Client when error from DynamoDB")
@@ -120,7 +120,7 @@ func TestServiceDelete_SnsError(t *testing.T) {
 	snsClient := MockSNSClient{Happy: false}
 	srv := createService(&ddbClient, &snsClient)
 	updateModel := db.ConcordancesModel{UUID: EXPECTED_UUID, ConcordedIds: []string{"A"}}
-	_, err := srv.Write(updateModel)
+	_, err := srv.Write(updateModel, "testing_tid_1234")
 
 	assert.True(t, snsClient.Invoked, "Should have invoked SNS Client when no error from DynamoDB")
 	assert.Equal(t, SNS_ERROR, err.Error(), "Did not return SNS error.")
@@ -140,7 +140,7 @@ type MockSNSClient struct {
 	Invoked bool
 }
 
-func (c *MockSNSClient) SendMessage(uuid string) error {
+func (c *MockSNSClient) SendMessage(uuid string, transaction_id string) error {
 	c.Invoked = true
 	if c.Happy {
 		return nil
@@ -161,14 +161,14 @@ type MockDynamoDBClient struct {
 	model db.ConcordancesModel
 }
 
-func (ddb *MockDynamoDBClient) Read(uuid string) (db.ConcordancesModel, error) {
+func (ddb *MockDynamoDBClient) Read(uuid string, transaction_id string) (db.ConcordancesModel, error) {
 	if ddb.Happy {
 		return oldModel, nil
 	}
 	return db.ConcordancesModel{}, errors.New(DDB_ERROR)
 }
 
-func (ddb *MockDynamoDBClient) Write(m db.ConcordancesModel) (db.Status, error) {
+func (ddb *MockDynamoDBClient) Write(m db.ConcordancesModel, transaction_id string) (db.Status, error) {
 	if !ddb.Happy {
 		return db.CONCORDANCE_ERROR, errors.New(DDB_ERROR)
 	}
@@ -181,7 +181,7 @@ func (ddb *MockDynamoDBClient) Write(m db.ConcordancesModel) (db.Status, error) 
 	return db.CONCORDANCE_UPDATED, nil
 }
 
-func (ddb *MockDynamoDBClient) Delete(uuid string) (db.Status, error) {
+func (ddb *MockDynamoDBClient) Delete(uuid string, transaction_id string) (db.Status, error) {
 	if !ddb.Happy {
 		return db.CONCORDANCE_ERROR, errors.New(DDB_ERROR)
 	}
@@ -202,18 +202,18 @@ type MockService struct {
 	err     error
 }
 
-func (mock *MockService) Read(uuid string) (db.ConcordancesModel, error) {
+func (mock *MockService) Read(uuid string, transaction_id string) (db.ConcordancesModel, error) {
 	return mock.model, mock.err
 }
 
-func (mock *MockService) Write(m db.ConcordancesModel) (db.Status, error) {
+func (mock *MockService) Write(m db.ConcordancesModel, transaction_id string) (db.Status, error) {
 	if mock.status == 0 {
 		return db.CONCORDANCE_CREATED, mock.err
 	}
 	return mock.status, mock.err
 }
 
-func (mock *MockService) Delete(uuid string) (db.Status, error) {
+func (mock *MockService) Delete(uuid string, transaction_id string) (db.Status, error) {
 	if mock.status == 0 {
 		return db.CONCORDANCE_DELETED, mock.err
 	}
