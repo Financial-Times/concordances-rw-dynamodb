@@ -48,7 +48,7 @@ func (c *Client) SendMessage(uuid string, transactionId string) (err error) {
 	resp, err := c.client.Publish(params)
 
 	if err == nil {
-		log.WithFields(log.Fields{"transaction_id":transactionId, "UUID": uuid, "Topic": c.topicArn, "SNS_Response": resp.String()}).Info("Error sending concordance event record to SNS")
+		log.WithFields(log.Fields{"transaction_id": transactionId, "UUID": uuid, "Topic": c.topicArn}).Info("Error sending concordance event record to SNS")
 		return err
 	}
 
