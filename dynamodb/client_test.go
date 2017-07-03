@@ -68,7 +68,7 @@ func setupDynamoDBLocal() *dynamodb.DynamoDB {
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(AWS_REGION),
 		Endpoint:    aws.String(DDB_ENDPOINT),
-		Credentials: credentials.NewEnvCredentials(),
+		Credentials: credentials.NewStaticCredentials("id", "secret", "token"),
 	})
 	assert.NoError(err, "Should be able to create a session talking to local DynamoDB. Make sure this is running")
 	ddb := dynamodb.New(sess)

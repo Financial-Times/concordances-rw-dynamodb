@@ -31,11 +31,7 @@ type ConcordancesRwService struct {
 }
 
 func NewConcordancesRwService(conf AppConfig) Service {
-	ddbClient := db.NewDynamoDBClient(conf.DynamoDbTableName, conf.AWSRegion)
-	snsClient := sns.NewSNSClient(conf.SNSTopic, conf.AWSRegion)
-	s := ConcordancesRwService{DynamoDbTable: conf.DynamoDbTableName, AwsRegion: conf.AWSRegion, ddb: ddbClient, sns: snsClient}
-	return &s
-
+	return &ConcordancesRwService{DynamoDbTable: conf.DynamoDbTableName, AwsRegion: conf.AWSRegion, ddb: db.NewDynamoDBClient(conf.DynamoDbTableName, conf.AWSRegion), sns: sns.NewSNSClient(conf.SNSTopic, conf.AWSRegion)}
 }
 
 func (s *ConcordancesRwService) Read(uuid string, transactionId string) (db.ConcordancesModel, error) {
@@ -49,6 +45,11 @@ func (s *ConcordancesRwService) Write(m db.ConcordancesModel, transactionId stri
 		return status, err
 	}
 	err = s.sns.SendMessage(m.UUID, transactionId)
+
+	if err != nil {
+		return db.CONCORDANCE_ERROR, err
+	}
+
 	return status, err
 }
 
@@ -63,6 +64,7 @@ func (s *ConcordancesRwService) Delete(uuid string, transactionId string) (db.St
 
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{"UUID": uuid, "transaction_id": transactionId}).Error("Error sending Concordance to SNS")
+		return db.CONCORDANCE_ERROR, err
 	}
 
 	return status, nil
