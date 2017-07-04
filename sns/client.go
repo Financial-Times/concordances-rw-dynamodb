@@ -52,7 +52,7 @@ func (c *Client) SendMessage(uuid string, transactionId string) (err error) {
 		return err
 	}
 
-	log.WithFields(log.Fields{"transaction_id":transactionId, "UUID": uuid, "Topic": c.topicArn, "SNS_Response": resp.String()}).Info("Successfully sent concordance event record to SNS")
+	log.WithFields(log.Fields{"transaction_id":transactionId, "UUID": uuid, "Topic": c.topicArn, "SNS_Response": resp}).Info("Successfully sent concordance event record to SNS")
 	return nil
 }
 
