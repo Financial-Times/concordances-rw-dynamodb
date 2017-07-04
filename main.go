@@ -48,7 +48,6 @@ func main() {
 	})
 	snsTopicArn := app.String(cli.StringOpt{
 		Name:   "snsTopicArn",
-		Value:  "arn:aws:sns:eu-west-1:027104099916:upp-concordance-semantic-SNSTopic-SCOTT1234",
 		Desc:   "SNS Topic to notify about concordances events",
 		EnvVar: "SNS_TOPIC_NAME",
 	})
