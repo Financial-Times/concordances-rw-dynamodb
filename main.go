@@ -49,7 +49,7 @@ func main() {
 	snsTopicArn := app.String(cli.StringOpt{
 		Name:   "snsTopicArn",
 		Desc:   "SNS Topic to notify about concordances events",
-		EnvVar: "SNS_TOPIC_NAME",
+		EnvVar: "SNS_TOPIC_ARN",
 	})
 	logLevel := app.String(cli.StringOpt{
 		Name:   "logLevel",
