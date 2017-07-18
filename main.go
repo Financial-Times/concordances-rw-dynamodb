@@ -48,9 +48,8 @@ func main() {
 	})
 	snsTopicArn := app.String(cli.StringOpt{
 		Name:   "snsTopicArn",
-		Value:  "arn:aws:sns:eu-west-1:027104099916:upp-concordance-semantic-SNSTopic-SCOTT1234",
 		Desc:   "SNS Topic to notify about concordances events",
-		EnvVar: "SNS_TOPIC_NAME",
+		EnvVar: "SNS_TOPIC_ARN",
 	})
 	logLevel := app.String(cli.StringOpt{
 		Name:   "logLevel",
@@ -95,13 +94,13 @@ func main() {
 
 		log.Infof("Listening on %v", *port)
 		if err := http.ListenAndServe(":"+*port, router); err != nil {
-			log.Fatalf("Unable to start server: %v", err)
+			log.WithError(err).Fatal("Unable to start server")
 		}
 
 	}
 	err = app.Run(os.Args)
 	if err != nil {
-		log.Errorf("App could not start, error=[%s]\n", err)
+		log.WithError(err).Error("App could not start")
 		return
 	}
 }

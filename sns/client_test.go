@@ -50,7 +50,7 @@ func TestMessageFormattedCorrectly(t *testing.T) {
 func TestPublishInputHasData(t *testing.T) {
 	mockSnsService := AssertPublishInput{tT: t}
 	client := Client{client: &mockSnsService, topicArn: TOPIC, awsRegion: AWS_REGION}
-	err := client.SendMessage(UUID)
+	err := client.SendMessage(UUID, "testing_transaction_id")
 	assert.NoError(t, err, "Received error")
 }
 

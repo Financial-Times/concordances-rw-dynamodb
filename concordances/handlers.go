@@ -2,29 +2,23 @@ package concordances
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"net/http"
+
 	db "github.com/Financial-Times/concordances-rw-dynamodb/dynamodb"
 	health "github.com/Financial-Times/go-fthealth/v1_1"
 	"github.com/Financial-Times/http-handlers-go/httphandlers"
 	status "github.com/Financial-Times/service-status-go/httphandlers"
+	"github.com/Financial-Times/transactionid-utils-go"
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
-	"net/http"
 )
 
 const (
-	ContentTypeJson              = "application/json"
-	UUID_Param                   = "uuid"
-	ErrorMsgJson                 = "{\"message\":\"%s\"}"
-	LogMsg503                    = "Error %s concordances"
-	LogMsg404                    = "Concordances not found"
-	ErrorMsg_BadBody             = "Invalid payload."
-	ErrorMsg_MismatchedConceptId = "Concept UUID in payload is different from UUID path parameter"
-	ErrorMsg_MissingConcordedIds = "Payload has no concorded UUIDs to store."
-	ErrorMsg_BadJson             = "Corrupted JSON"
+	ContentTypeJson = "application/json"
+	UUID_Param      = "uuid"
 )
 
 type Handler struct {
@@ -66,21 +60,20 @@ func (h *Handler) registerAdminHandlers(router *mux.Router, config *healthConfig
 
 func (h *Handler) HandleGet(rw http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	uuid := vars[UUID_Param]
-	model, err := h.srv.Read(uuid)
+	tid := transactionidutils.GetTransactionIDFromRequest(r)
+
+	model, err := h.srv.Read(uuid, tid)
 
 	//503
 	if err != nil {
-		logMsg := fmt.Sprintf(LogMsg503, "retrieving")
-		log.WithFields(log.Fields{"UUID": uuid}).Errorf("%s %s", logMsg, err.Error())
-		writeJSONError(rw, logMsg, http.StatusServiceUnavailable)
+		writeJSONError(rw, "Error retrieving concordances", http.StatusServiceUnavailable)
 		return
 	}
 	//404
 	if model.ConcordedIds == nil {
-		log.WithFields(log.Fields{"UUID": uuid}).Infof("%s for %s", LogMsg404, uuid)
-		writeJSONError(rw, LogMsg404, http.StatusNotFound)
+		log.WithFields(log.Fields{"UUID": uuid, "transaction_id": tid}).Info("Unable to find concordance")
+		writeJSONError(rw, "Unable to find concordance", http.StatusNotFound)
 		return
 	}
 
@@ -92,47 +85,47 @@ func (h *Handler) HandleGet(rw http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) HandlePut(rw http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
-	//400
+	tid := transactionidutils.GetTransactionIDFromRequest(r)
 	uuid := vars[UUID_Param]
-	if r.ContentLength <= 0 {
-		logMsg := fmt.Sprintf("%s Error: %s", ErrorMsg_BadBody, ErrorMsg_BadJson)
-		log.WithFields(log.Fields{"UUID": uuid}).Infof(logMsg)
-		writeJSONError(rw, logMsg, http.StatusBadRequest)
-		return
-	}
+
 	model := db.ConcordancesModel{}
 	err := json.NewDecoder(r.Body).Decode(&model)
 	defer r.Body.Close()
 
 	//400
 	if err != nil {
-		logMsg := fmt.Sprintf("%s Error: %s", ErrorMsg_BadBody, ErrorMsg_BadJson)
-		log.WithFields(log.Fields{"UUID": uuid}).Infof(logMsg)
-		writeJSONError(rw, logMsg, http.StatusBadRequest)
+		log.WithFields(log.Fields{"UUID": uuid, "transaction_id": tid}).Error("Error decoding the JSON of the request body")
+		writeJSONError(rw, "Error decoding the JSON of the request body", http.StatusBadRequest)
 		return
 	}
 
-	err = h.invalidModel(uuid, model)
 	//400
-	if err != nil {
-		logMsg := fmt.Sprintf("%s Error: %s", ErrorMsg_BadBody, err.Error())
-		log.WithFields(log.Fields{"UUID": uuid}).Infof(logMsg)
-		writeJSONError(rw, logMsg, http.StatusBadRequest)
+	if model.UUID == "" {
+		log.WithFields(log.Fields{"UUID": uuid, "transaction_id": tid}).Error("Concept UUID in payload is different from UUID path parameter")
+		writeJSONError(rw,"Concept UUID is missing from the Payload", http.StatusBadRequest)
+		return
+	}
+	if model.UUID != uuid {
+		log.WithFields(log.Fields{"UUID": uuid, "transaction_id": tid}).Error("Concept UUID in payload is different from UUID path parameter")
+		writeJSONError(rw, fmt.Sprintf("Concept UUID (%s) in payload is different from UUID path parameter (%s)", model.UUID, uuid), http.StatusBadRequest)
 		return
 	}
 
-	created, err := h.srv.Write(model)
+	if (model.ConcordedIds == nil) || (len(model.ConcordedIds) < 1) {
+		log.WithFields(log.Fields{"UUID": uuid, "transaction_id": tid}).Error("Payload has no concorded UUIDs to store")
+		writeJSONError(rw, "Payload has no concorded UUIDs to store", http.StatusBadRequest)
+		return
+	}
+
+	status, err := h.srv.Write(model, tid)
 
 	//503
-	if err != nil {
-		logMsg := fmt.Sprintf(LogMsg503, "storing")
-		log.WithFields(log.Fields{"UUID": uuid}).Errorf("%s %s", logMsg, err.Error())
-		writeJSONError(rw, logMsg, http.StatusServiceUnavailable)
+	if err != nil || status == db.CONCORDANCE_ERROR {
+		writeJSONError(rw, "Error writing concordance", http.StatusServiceUnavailable)
 		return
 	}
 
-	if created {
+	if status == db.CONCORDANCE_CREATED {
 		rw.WriteHeader(http.StatusCreated)
 		return
 	} else {
@@ -143,18 +136,19 @@ func (h *Handler) HandlePut(rw http.ResponseWriter, r *http.Request) {
 func (h *Handler) HandleDelete(rw http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uuid := vars[UUID_Param]
-	deleted, err := h.srv.Delete(uuid)
+	tid := transactionidutils.GetTransactionIDFromRequest(r)
+
+	status, err := h.srv.Delete(uuid, tid)
+
 	//503
-	if err != nil {
-		logMsg := fmt.Sprintf(LogMsg503, "deleting")
-		log.WithFields(log.Fields{"UUID": uuid}).Errorf("%s %s", logMsg, err.Error())
-		writeJSONError(rw, logMsg, http.StatusServiceUnavailable)
+	if err != nil || status == db.CONCORDANCE_ERROR {
+		writeJSONError(rw, "Error deleting concordance", http.StatusServiceUnavailable)
 		return
 	}
 	//404
-	if !deleted {
-		log.WithFields(log.Fields{"UUID": uuid}).Infof("%s for %s", LogMsg404, uuid)
-		writeJSONError(rw, LogMsg404, http.StatusNotFound)
+	if status == db.CONCORDANCE_NOT_FOUND {
+		log.WithFields(log.Fields{"UUID": uuid, "transaction_id": tid}).Info("Unable to find concordance")
+		writeJSONError(rw, "Unable to find concordance", http.StatusNotFound)
 		return
 	}
 	//204
@@ -164,15 +158,5 @@ func (h *Handler) HandleDelete(rw http.ResponseWriter, r *http.Request) {
 func writeJSONError(rw http.ResponseWriter, logMsg string, statusCode int) {
 	rw.Header().Set("Content-Type", ContentTypeJson)
 	rw.WriteHeader(statusCode)
-	rw.Write([]byte(fmt.Sprintf(ErrorMsgJson, logMsg)))
-}
-
-func (h *Handler) invalidModel(uuid string, model db.ConcordancesModel) error {
-	if model.UUID != uuid {
-		return errors.New(ErrorMsg_MismatchedConceptId)
-	}
-	if (model.ConcordedIds == nil) || (len(model.ConcordedIds) < 1) {
-		return errors.New(ErrorMsg_MissingConcordedIds)
-	}
-	return nil
+	rw.Write([]byte(fmt.Sprintf("{\"message\":\"%s\"}", logMsg)))
 }

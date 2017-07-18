@@ -39,7 +39,7 @@ func (service *healthService) gtgCheck() gtg.Status {
 
 func (service *healthService) dynamoDbChecker() (string, error) {
 	dbClient := service.config.srv.getDBClient()
-	_, err := dbClient.Read("healthcheck")
+	err := dbClient.Healthcheck()
 	if err != nil {
 		return "Cannot connect to DynamoDB Table", err
 	}
