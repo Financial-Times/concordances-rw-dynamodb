@@ -102,10 +102,10 @@ func (s *Client) Write(m ConcordancesModel, transactionId string) (updateStatus 
 	}
 
 	if model.UUID != "" {
-		log.WithError(err).WithFields(log.Fields{"UUID": m.UUID, "ConcordedIds": strings.Join(m.ConcordedIds, ", "), "transaction_id": transactionId}).Info("Concordance updated")
+		log.WithFields(log.Fields{"UUID": m.UUID, "ConcordedIds": strings.Join(m.ConcordedIds, ", "), "transaction_id": transactionId}).Info("Concordance updated")
 		return CONCORDANCE_UPDATED, nil
 	} else {
-		log.WithError(err).WithFields(log.Fields{"UUID": m.UUID, "ConcordedIds": strings.Join(m.ConcordedIds, ", "), "transaction_id": transactionId}).Info("Concordance created")
+		log.WithFields(log.Fields{"UUID": m.UUID, "ConcordedIds": strings.Join(m.ConcordedIds, ", "), "transaction_id": transactionId}).Info("Concordance created")
 		return CONCORDANCE_CREATED, nil
 	}
 }
