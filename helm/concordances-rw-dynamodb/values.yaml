@@ -1,0 +1,18 @@
+# Default values for concordances-rw-dynamodb.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+service:
+  name: "" # The name of the service, should be defined in the specific app-configs folder.
+  hasHealthcheck: "true"
+replicaCount: 2
+image:
+  repository: coco/concordances-rw-dynamodb
+  pullPolicy: IfNotPresent
+env:
+  app:
+    port: "8080"
+resources:
+  limits:
+    memory: 512Mi
+
+

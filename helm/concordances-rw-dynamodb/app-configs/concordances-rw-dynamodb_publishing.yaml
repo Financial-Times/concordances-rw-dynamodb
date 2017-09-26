@@ -1,0 +1,8 @@
+# Values used for the deployed application.
+replicaCount: 1
+service:
+  name: concordances-rw-dynamodb
+env:
+  LOG_LEVEL: info
+  DYNAMODB_TABLE_NAME: upp-data-store
+  SNS_TOPIC_ARN: arn:aws:sns:eu-west-1:0123456789:upp-concept-publishing-prod-SNSTopic-12345ABCDE

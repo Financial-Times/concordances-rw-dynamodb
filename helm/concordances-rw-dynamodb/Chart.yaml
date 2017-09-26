@@ -1,0 +1,4 @@
+apiVersion: v1
+description: concordances-rw-dynamodb Helm chart for Kubernetes
+name: concordances-rw-dynamodb
+version: 0.0.0  # this entry can be left untouched as it is automatically handled by Jenkins pipeline
