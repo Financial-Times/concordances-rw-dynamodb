@@ -23,9 +23,19 @@ spec:
       - name: {{ .Values.service.name }} 
         image: "{{ .Values.image.repository }}:{{ .Chart.Version }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
-        env: 
+        env:
         - name: AWS_REGION
           value: "eu-west-1"
+        - name: DYNAMODB_TABLE_NAME
+          valueFrom:
+            secretKeyRef:
+              name: global-secrets
+              key: concordance.table
+        - name: SNS_TOPIC_ARN
+          valueFrom:
+            secretKeyRef:
+              name: global-secrets
+              key: sns.arn.concepts
         ports: 
         - containerPort: 8080 
         livenessProbe: 
