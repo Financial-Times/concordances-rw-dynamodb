@@ -3,7 +3,7 @@ package concordances
 import (
 	db "github.com/Financial-Times/concordances-rw-dynamodb/dynamodb"
 	"github.com/Financial-Times/concordances-rw-dynamodb/sns"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type AppConfig struct {

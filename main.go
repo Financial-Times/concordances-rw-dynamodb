@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/Financial-Times/concordances-rw-dynamodb/concordances"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/jawher/mow.cli"
 	"net/http"
