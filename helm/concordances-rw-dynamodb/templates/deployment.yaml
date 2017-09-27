@@ -30,12 +30,12 @@ spec:
           valueFrom:
             secretKeyRef:
               name: global-secrets
-              key: concordance.table
+              key: concepts.dynamodb_table
         - name: SNS_TOPIC_ARN
           valueFrom:
             secretKeyRef:
               name: global-secrets
-              key: sns.arn.concepts
+              key: concepts.sns_arn
         - name: AWS_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
