@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	db "github.com/Financial-Times/concordances-rw-dynamodb/dynamodb"
-	health "github.com/Financial-Times/go-fthealth/v1_1"
+	fthealth "github.com/Financial-Times/go-fthealth/v1_1"
 	"github.com/Financial-Times/http-handlers-go/httphandlers"
 	status "github.com/Financial-Times/service-status-go/httphandlers"
 	"github.com/Financial-Times/transactionid-utils-go"
@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
+	"time"
 )
 
 const (
@@ -49,9 +50,20 @@ func (h *Handler) registerAPIHandlers(router *mux.Router) {
 func (h *Handler) registerAdminHandlers(router *mux.Router, config *healthConfig) {
 	log.Info("Registering admin handlers")
 	healthService := newHealthService(config)
-	hc := health.HealthCheck{SystemCode: h.conf.AppSystemCode, Name: h.conf.AppName, Description: "Stores concordances in cache and notifies downstream services", Checks: healthService.checks}
-	router.HandleFunc(healthPath, health.Handler(hc))
-	router.HandleFunc(status.GTGPath, status.NewGoodToGoHandler(healthService.gtgCheck))
+	var checks = []fthealth.Check{healthService.dynamoDbCheck(), healthService.snsCheck()}
+
+	timedHC := fthealth.TimedHealthCheck{
+		HealthCheck: fthealth.HealthCheck{
+			SystemCode: h.conf.AppSystemCode,
+			Description: h.conf.AppDescription,
+			Name: h.conf.AppName,
+			Checks: checks,
+		},
+		Timeout: 10 * time.Second,
+	}
+
+	router.HandleFunc(healthPath, fthealth.Handler(&timedHC))
+	router.HandleFunc(status.GTGPath, status.NewGoodToGoHandler(healthService.gtg))
 	router.HandleFunc(status.BuildInfoPath, status.BuildInfoHandler)
 
 	monitoringRouter := httphandlers.TransactionAwareRequestLoggingHandler(log.StandardLogger(), router)

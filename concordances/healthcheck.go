@@ -1,7 +1,7 @@
 package concordances
 
 import (
-	health "github.com/Financial-Times/go-fthealth/v1_1"
+	fthealth "github.com/Financial-Times/go-fthealth/v1_1"
 	"github.com/Financial-Times/service-status-go/gtg"
 )
 
@@ -9,7 +9,7 @@ const healthPath = "/__health"
 
 type healthService struct {
 	config *healthConfig
-	checks []health.Check
+	checks []fthealth.Check
 }
 
 type healthConfig struct {
@@ -22,17 +22,30 @@ type healthConfig struct {
 func newHealthService(config *healthConfig) *healthService {
 
 	service := &healthService{config: config}
-	service.checks = []health.Check{
+	service.checks = []fthealth.Check{
 		service.dynamoDbCheck(), service.snsCheck(),
 	}
 	return service
 }
 
-func (service *healthService) gtgCheck() gtg.Status {
-	for _, check := range service.checks {
-		if _, err := check.Checker(); err != nil {
-			return gtg.Status{GoodToGo: false, Message: err.Error()}
-		}
+func (service *healthService) gtg() gtg.Status {
+	dynamoDbCheck := func() gtg.Status {
+		return gtgCheck(service.dynamoDbChecker)
+	}
+
+	snsQueueCheck := func() gtg.Status {
+		return gtgCheck(service.snsChecker)
+	}
+
+	return gtg.FailFastParallelCheck([]gtg.StatusChecker{
+		dynamoDbCheck,
+		snsQueueCheck,
+	})()
+}
+
+func gtgCheck(handler func() (string, error)) gtg.Status {
+	if _, err := handler(); err != nil {
+		return gtg.Status{GoodToGo: false, Message: err.Error()}
 	}
 	return gtg.Status{GoodToGo: true}
 }
@@ -47,11 +60,11 @@ func (service *healthService) dynamoDbChecker() (string, error) {
 
 }
 
-func (service *healthService) dynamoDbCheck() health.Check {
-	return health.Check{
+func (service *healthService) dynamoDbCheck() fthealth.Check {
+	return fthealth.Check{
 		BusinessImpact: `DynamoDB healthcheck failure will cause service not to be able to store concordances in cache
 		and notify downstream services of created, updated or deleted concordances records.`,
-		Name:       "DynamoDB healthcheck",
+		Name:       service.config.appName,
 		PanicGuide: "https://dewey.ft.com/concordances-rw-dynamodb.html",
 		Severity:   1,
 		TechnicalSummary: "DynamoDB healthcheck checks if the service can connect to DynamoDB, and access the table. " +
@@ -74,8 +87,8 @@ func (service *healthService) snsChecker() (string, error) {
 	return "SNS Client is healthy", nil
 }
 
-func (service *healthService) snsCheck() health.Check {
-	return health.Check{
+func (service *healthService) snsCheck() fthealth.Check {
+	return fthealth.Check{
 		BusinessImpact: `SNS healthcheck failure will cause service not to be able to notify downstream services of created, updated or deleted concordances records.`,
 		Name:           "SNS healthcheck",
 		PanicGuide:     "https://dewey.ft.com/concordances-rw-dynamodb.html",

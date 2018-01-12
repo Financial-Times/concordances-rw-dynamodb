@@ -11,6 +11,7 @@ type AppConfig struct {
 	DynamoDbTableName string
 	SNSTopic          string
 	AppSystemCode     string
+	AppDescription    string
 	AppName           string
 	Port              string
 }
