@@ -1,7 +1,9 @@
-# concordances-rw-dynamodb
+# [RETIRED] concordances-rw-dynamodb
 [![Circle CI](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb.svg?style=shield)](https://circleci.com/gh/Financial-Times/concordances-rw-dynamodb)[![Go Report Card](https://goreportcard.com/badge/github.com/Financial-Times/concordances-rw-dynamodb)](https://goreportcard.com/report/github.com/Financial-Times/concordances-rw-dynamodb) [![Coverage Status](https://coveralls.io/repos/github/Financial-Times/concordances-rw-dynamodb/badge.svg)](https://coveralls.io/github/Financial-Times/concordances-rw-dynamodb)
 
 ## Introduction
+
+This service has been replaced by concordances-rw-neo4j!
 
 The concordance-rw-dynamodb service is responsible for taking a normalised concordance object and storing it into DynamoDB.
 A concordance is linking one primary concept identifier to another concept identifier.
